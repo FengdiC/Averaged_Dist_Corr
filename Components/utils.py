@@ -11,6 +11,7 @@ def argsparser():
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--agent', help='the trainer used', type=str, default='no_weight')
     parser.add_argument('--env', help='Environment name', type=str, default='CartPole-v1')
+    parser.add_argument('--log_dir', help='log direction', type=str, default='./logs/')
 
     parser.add_argument('--hidden', type=int, help='Number of hidden units', default=64)
     parser.add_argument('--var', type=float, help='Initialization value for action probability variacne', default=1)

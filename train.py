@@ -20,9 +20,9 @@ def train(args):
     agent = BatchActorCritic(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden)
 
     # Experiment block starts
-    num_steps = 5000000
+    num_steps = 1000000
     avgrets = agent.train(env,args,num_steps,args.buffer)
 
 
-args = argsparser()
-train(args)
+# args = argsparser()
+# train(args)
