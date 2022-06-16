@@ -12,4 +12,4 @@ source $HOME/Documents/ENV/bin/activate
 mkdir $SLURM_TMPDIR/logs/
 python PG/Components/hyperparam_tuning.py --log_dir=$SLURM_TMPDIR/logs/
 
-cp -r $SLURM_TMPDIR/gifs/ $SCRATCH/avg_discount
+cp -r $SLURM_TMPDIR/logs/ $SCRATCH/avg_discount
