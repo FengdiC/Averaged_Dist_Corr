@@ -44,7 +44,7 @@ class BatchActorCritic(A):
         # op = meanstdnormalizaer(env.reset())
         op = env.reset()
 
-        checkpoint = 10000
+        checkpoint = 100000
         num_episode = 0
         count = 0
         time = 0
@@ -65,7 +65,8 @@ class BatchActorCritic(A):
                 self.buffer.add_last(obs)
                 for epoch in range(args.epoch):
                     self.buffer.shuffle()
-                    for turn in range(buffer_size//self.BS):
+                    for turn in range(1):   # buffer_size//self.BS
+                        # value functions may not be well learnt
                         self.frames, self.rewards, self.dones, self.actions, self.old_probs, self.times, self.next_frames \
                             = self.buffer.sample(self.BS, turn)
                         self.update(args.LAMBDA_2)

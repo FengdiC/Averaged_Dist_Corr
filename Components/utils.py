@@ -1,20 +1,9 @@
-import tensorflow as tf
 import numpy as np
 import os
 import random
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('/usr/local/lib/python3.6/dist-packages')
-import gym
-from tqdm import tqdm
-import imageio
-from skimage.transform import resize
-import math
-import time
-import pickle
-from numpy import genfromtxt
-import csv
-from scipy.special import huber
 
 import argparse
 def argsparser():
@@ -75,28 +64,28 @@ def meanstdnormalizaer(sequ):
     x = (sequ - mean)/(std+.001)
     return x
 
-def gymdisplay(env,MAIN,continuous=True):
-    op = meanstdnormalizaer(env.reset())
-    done=False
-    step = 0
-    while not done and step<300:
-        obs = tf.expand_dims(tf.constant(op), 0)
-        if continuous:
-            mean, var, a, value = MAIN(obs)
-            obs, r, done, infos = env.step(a)
-        else:
-            action_prob, a, value = MAIN(obs)
-            obs, r, done, infos = env.step(int(a))
-
-        # Observe
-        op = meanstdnormalizaer(obs)
-        img = env.render(mode="rgb_array")
-        plt.imshow(img)
-        plt.pause(0.00001)
-        step+=1
-    img = env.render(mode="rgb_array")
-    plt.imshow(img)
-    plt.close()
+# def gymdisplay(env,MAIN,continuous=True):
+#     op = meanstdnormalizaer(env.reset())
+#     done=False
+#     step = 0
+#     while not done and step<300:
+#         obs = tf.expand_dims(tf.constant(op), 0)
+#         if continuous:
+#             mean, var, a, value = MAIN(obs)
+#             obs, r, done, infos = env.step(a)
+#         else:
+#             action_prob, a, value = MAIN(obs)
+#             obs, r, done, infos = env.step(int(a))
+#
+#         # Observe
+#         op = meanstdnormalizaer(obs)
+#         img = env.render(mode="rgb_array")
+#         plt.imshow(img)
+#         plt.pause(0.00001)
+#         step+=1
+#     img = env.render(mode="rgb_array")
+#     plt.imshow(img)
+#     plt.close()
 
 class A:
     def __init__(self, **kwargs):
