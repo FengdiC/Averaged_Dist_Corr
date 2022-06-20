@@ -22,6 +22,7 @@ def train(args):
     # Experiment block starts
     num_steps = 1000000
     avgrets = agent.train(env,args,num_steps,args.buffer)
+    return avgrets
 
 
 # args = argsparser()
