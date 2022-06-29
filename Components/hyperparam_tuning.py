@@ -32,8 +32,10 @@ for values in list(itertools.product(param['batch_size'],param['buffer'],param['
         num_steps = 1000000
         checkpoint = 10000
         result.append(train(args))
+        print(result)
 
     ret = np.array(result)
+    print(ret.shape)
     ret = np.mean(ret,axis=0)
     name = [str(k) for k in values]
     logger.logkv("hyperparam",'-'.join(name))

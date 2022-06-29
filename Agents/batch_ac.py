@@ -31,88 +31,40 @@ class BatchActorCritic(A):
         self.closs.backward()
         self.opt.step()
 
-    def train(self,env,args,num_steps,buffer_size):
+    def create_buffer(self,env,args,buffer_size):
         # Create the buffer
+        self.buffer_size=buffer_size
+        self.args=args
         o_dim = env.observation_space.shape[0]
         self.buffer = Buffer(args, o_dim, 0, buffer_size)
 
-        ret = 0
-        rets = []
-        avgrets = []
-        losses = []
-        avglos = []
-        # op = meanstdnormalizaer(env.reset())
-        op = env.reset()
+    def act(self,op):
+        a, lprob = self.network.act(torch.from_numpy(op))
+        return int(a.detach()), lprob.detach()
 
-        checkpoint = 10000
-        num_episode = 0
-        count = 0
-        time = 0
-        for steps in range(num_steps):
-            # does torch need expand_dims
-            a,lprob = self.network.act(torch.from_numpy(op))
-            obs, r, done, infos = env.step(int(a.detach()))
-            self.buffer.add(op,r , done, int(a.detach().item()), lprob.detach().item(), time)
+    def store(self,op,r,done,a,lprob,time):
+        self.buffer.add(op, r, done, a, lprob.item(), time)
 
-            # Observe
-            # op = meanstdnormalizaer(obs)
-            op = obs
-            time += 1
-            count += 1
+    def learn(self,count,obs):
+        # Update
+        if count == self.buffer_size:
+            self.buffer.add_last(obs)
+            for epoch in range(1):
+                self.buffer.shuffle()
+                for turn in range(1):  # buffer_size//self.BS
+                    # value functions may not be well learnt
+                    self.frames, self.rewards, self.dones, self.actions, self.old_probs, self.times, self.next_frames \
+                        = self.buffer.sample(self.BS, turn)
+                    self.update(self.args.LAMBDA_2)
+                    # self.scheduler.step()
+            self.buffer.empty()
 
-            # Update
-            if count == buffer_size:
-                self.buffer.add_last(obs)
-                for epoch in range(args.epoch):
-                    self.buffer.shuffle()
-                    for turn in range(1):   # buffer_size//self.BS
-                        # value functions may not be well learnt
-                        self.frames, self.rewards, self.dones, self.actions, self.old_probs, self.times, self.next_frames \
-                            = self.buffer.sample(self.BS, turn)
-                        self.update(args.LAMBDA_2)
-                        # self.scheduler.step()
-                self.buffer.empty()
-
-                print("ploss is: ", self.ploss.detach().numpy(),":::", self.closs.detach().numpy())
-                losses.append(float(self.ploss.detach().numpy()+self.closs.detach().numpy()))
-                count = 0
-
-            # End of Episode
-            ret += r
-            if done:
-                # add in the terminal state or not
-
-                # a,lprob = self.network.act(torch.from_numpy(op))
-                # self.buffer.add(op,0.0 , done, int(a.detach().item()), lprob.detach().item(), time)
-                # count+=1
-                num_episode += 1
-                rets.append(ret)
-                # assert ret<=200
-                # if ret > 200:
-                #     print("Large rewards: ", ret, ":::", r)
-                ret = 0
-                time = 0
-                # op =  meanstdnormalizaer(env.reset())
-                op = env.reset()
-
-
-            if (steps + 1) % checkpoint == 0:
-                # plt.rcParams["figure.figsize"]
-                # gymdisplay(env,MAIN)
-                avgrets.append(np.mean(rets))
-                avglos.append(np.mean(losses))
-                rets = []
-                losses = []
-                # plt.clf()
-                # plt.subplot(211)
-                # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-                # plt.subplot(212)
-                # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-                # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-                # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-                # plt.pause(0.001)
-        return avgrets
-
+            print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
+            loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
+            count = 0
+            return loss,count
+        else:
+            return 0,count
 
 
 
