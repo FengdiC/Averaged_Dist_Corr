@@ -11,8 +11,8 @@ sys.path.insert(0, parentdir)
 from train import train
 
 
-param = {'batch_size':[64,256,512,1000],'buffer':[1000,3000,5000,10000],'lr':[0.01,0.001,0.0003],
-         'LAMBDA_2':[1,10,40,80],'epoch':[1,5,10,20]}
+param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
+         'LAMBDA_2':[10,40],'epoch':[1]}
 args = utils.argsparser()
 
 logger.configure(args.log_dir,['csv'], log_suffix='batchAC-hyperparam-tune')
@@ -25,6 +25,9 @@ for values in list(itertools.product(param['batch_size'],param['buffer'],param['
     args.epoch = values[4]
     seeds = [111,345,3]
     result = []
+	
+    if args.buffer<args.batch_size:
+        continue
 
     for seed in seeds:
         args.seed= seed
