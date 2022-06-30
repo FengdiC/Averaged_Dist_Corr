@@ -9,7 +9,7 @@ import argparse
 def argsparser():
     parser = argparse.ArgumentParser("Tensorflow Implementation of DQN")
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
-    parser.add_argument('--agent', help='the trainer used', type=str, default='weighted_batch_ac')
+    parser.add_argument('--agent', help='the trainer used', type=str, default='batch_ac')
     parser.add_argument('--env', help='Environment name', type=str, default='CartPole-v1')
     parser.add_argument('--log_dir', help='log direction', type=str, default='./logs/')
 
@@ -17,9 +17,9 @@ def argsparser():
     parser.add_argument('--var', type=float, help='Initialization value for action probability variacne', default=1)
     parser.add_argument('--grad_norm', type=int, help='The bar to clip down gradients', default=2.5)
     parser.add_argument('--lr_decay', type=float, help='The decay step for learning rate schedule', default=1e5)
-    parser.add_argument('--batch_size', type=int, help='Max Episode Length', default=100)
-    parser.add_argument('--buffer', type=int, help='Buffer size', default=100)
-    parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=20)
+    parser.add_argument('--batch_size', type=int, help='Max Episode Length', default=64)
+    parser.add_argument('--buffer', type=int, help='Buffer size', default=64)
+    parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=1)
 
     parser.add_argument('--gamma', type=float, help='Max Episode Length', default=0.99)
     parser.add_argument('--lam', type=float, help='Max Episode Length', default=0.95)

@@ -82,7 +82,7 @@ class WeightedBatchActorCritic(A):
                     # self.scheduler.step()
             self.buffer.empty()
 
-            print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
+            # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
             loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
             count = 0
             return loss,count
