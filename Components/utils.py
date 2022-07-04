@@ -19,7 +19,7 @@ def argsparser():
     parser.add_argument('--lr_decay', type=float, help='The decay step for learning rate schedule', default=1e5)
     parser.add_argument('--batch_size', type=int, help='Max Episode Length', default=100)
     parser.add_argument('--buffer', type=int, help='Buffer size', default=100)
-    parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=20)
+    parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=5)
 
     parser.add_argument('--gamma', type=float, help='Max Episode Length', default=0.99)
     parser.add_argument('--lam', type=float, help='Max Episode Length', default=0.95)

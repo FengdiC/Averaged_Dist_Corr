@@ -33,7 +33,7 @@ def train(args):
     # op = meanstdnormalizaer(env.reset())
     op = env.reset()
 
-    num_steps = 1000000
+    num_steps = 10000000
     checkpoint = 10000
     num_episode = 0
     count = 0
