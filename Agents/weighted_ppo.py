@@ -5,18 +5,31 @@ from Networks.actor_critic import MLPCategoricalActor
 import gym
 from Components.utils import meanstdnormalizaer, A
 from Components.buffer import Buffer
+from Networks.weight import AvgDiscount
 import matplotlib.pyplot as plt
 
 # The current version of PPO does not have entropy loss !!!!!
 
-class PPO(A):
+class WeightedPPO(A):
     # the current code works for categorical actions only
     def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False):
-        super(PPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
+        super(WeightedPPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
                                               hidden=hidden,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
+        self.weight_network = AvgDiscount(o_dim, hidden)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
+        self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=100000, gamma=0.9)
+
+    def update_weight(self):
+        # input: data  Job: finish one round of gradient update
+        self.weights = self.weight_network.forward(torch.from_numpy(self.frames))
+        self.labels = self.gamma**self.times
+
+        self.wloss = torch.mean((torch.from_numpy(self.labels)-self.weights)**2)
+        self.weight_opt.zero_grad()
+        self.wloss.backward()
+        self.weight_opt.step()
 
     def update(self,closs_weight,entropy_weight):
         # input: data  Job: finish one round of gradient update
@@ -57,6 +70,15 @@ class PPO(A):
         # Update
         if count == self.buffer_size:
             self.buffer.add_last(obs)
+            for epoch in range(self.args.epoch):
+                self.buffer.shuffle()
+                for turn in range(self.buffer_size // self.BS):  # buffer_size//self.BS
+                    # value functions may not be well learnt
+                    self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
+                        = self.buffer.sample(self.BS, turn)
+                    self.update_weight()
+                    # self.scheduler.step()
+
             for epoch in range(self.args.epoch):
                 self.buffer.shuffle()
                 for turn in range(self.buffer_size//self.BS):  # buffer_size//self.BS

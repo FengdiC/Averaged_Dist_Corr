@@ -13,7 +13,7 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['batch_ac','weighted_batch_ac'],'epoch':[1,5,10,20]}
+param = {'agent':['batch_ac','weighted_batch_ac'],'epoch':[1,10]}
 args = utils.argsparser()
 args.batch_size = 64
 args.buffer = 64
@@ -29,6 +29,8 @@ for values in list(itertools.product(param['agent'],param['epoch'])):
     result = []
 	
     if args.agent=='batch_ac' and args.epoch>1:
+        continue
+    if args.agent == 'weighted_batch_ac' and args.epoch!=10:
         continue
 
     for seed in seeds:

@@ -26,11 +26,11 @@ class MLPCategoricalActor(nn.Module):
         dist = torch.distributions.Categorical(prob)
         if self.shared:
             value = self.critic(body)
-            return dist.log_prob(actions),torch.squeeze(value)
+            return dist.log_prob(actions),torch.squeeze(value),dist.entropy()
         else:
             critic_body = self.critic_body(obs)
             value = self.critic(critic_body)
-            return dist.log_prob(actions), torch.squeeze(value)
+            return dist.log_prob(actions), torch.squeeze(value),dist.entropy()
 
     def act(self,obs):
         obs=obs.float()

@@ -48,6 +48,7 @@ class Buffer(A):
 
     def sample(self,BS=100,turn=0):
         index= self.idx[turn*BS:(turn+1)*BS]
+        self.index = index
         return np.copy(self.frames[index]),np.copy(self.rewards[index]),np.copy(self.dones[index]), \
                np.copy(self.actions[index]),np.copy(self.old_probs[index]),np.copy(self.times[index]),\
                np.copy(self.frames[index+1])
@@ -55,3 +56,26 @@ class Buffer(A):
     def shuffle(self):
         self.idx = np.arange(self.size)
         np.random.shuffle(self.idx)
+
+    def all_frames(self):
+        return self.frames[:self.size]
+
+    def compute_gae(self,values):
+        self.values=values
+
+        # This function is only called when the buffer is full.
+        self.returns = np.zeros(self.size)
+        self.returns[-1] = self.values[-1]
+        for i in reversed(range(self.size-1)):
+            self.returns[i] = self.rewards[i] + \
+                              ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2)*self.returns[i+1]
+
+        self.advantages = np.zeros(self.size)
+        self.advantages[-1] = self.returns[-1] - self.values[-1]
+        for i in reversed(range(self.size - 1)):
+            self.advantages[i] = self.rewards[i] + \
+                                 ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2) * self.values[i + 1] - self.values[i] \
+                                + ((1-self.dones[i])* self.args.gamma*self.args.lam+self.dones[i]*(self.args.gamma*self.args.lam)**2) * self.advantages[i + 1]
+        # self.returns = (self.returns - np.mean(self.returns)) / (np.std(self.returns) + eps)
+        # self.advantages = (self.advantages - np.mean(self.advantages)) / (np.std(self.advantages) + np.finfo(float).eps)
+        return np.copy(self.returns[self.index]), np.copy(self.advantages[self.index])

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
-from Components.utils import meanstdnormalizaer, A
+from Components.utils import A
 from Components.buffer import Buffer
 from Networks.weight import AvgDiscount
 from Networks.actor_critic import MLPCategoricalActor
@@ -20,15 +20,15 @@ class WeightedBatchActorCritic(A):
 
     def update(self,closs_weight):
         # input: data  Job: finish one round of gradient update
-        _, self.next_values = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
-        self.new_probs, self.values = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
+        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
+        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
 
         self.dones = torch.from_numpy(self.dones)
-        returns =  torch.from_numpy(self.rewards) + self.gamma*(1-self.dones)*self.next_values.detach()
+        returns =  torch.from_numpy(self.rewards) + [(1-self.dones)* self.args.gamma+self.dones*self.args.gamma**2]*self.next_values.detach()
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
 
         self.weights = self.weight_network.forward(torch.from_numpy(self.frames))
-        pobj = self.new_probs * (returns - self.values).detach() *self.weights.detach()
+        pobj = self.new_lprobs * (returns - self.values).detach() *self.weights.detach()
         self.ploss = -torch.mean(pobj)
         self.opt.zero_grad()
         self.ploss.backward()
@@ -67,7 +67,7 @@ class WeightedBatchActorCritic(A):
                 self.buffer.shuffle()
                 for turn in range(self.buffer_size // self.BS):  # buffer_size//self.BS
                     # value functions may not be well learnt
-                    self.frames, self.rewards, self.dones, self.actions, self.old_probs, self.times, self.next_frames \
+                    self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
                     self.update_weight()
                     # self.scheduler.step()
