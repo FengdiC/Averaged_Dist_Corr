@@ -7,25 +7,33 @@ from Components.utils import meanstdnormalizaer, A
 from Components.buffer import Buffer
 import matplotlib.pyplot as plt
 
-class BatchActorCritic(A):
-    # the current code works for shared networks with categorical actions only
+# The current version of PPO does not have entropy loss !!!!!
+
+class PPO(A):
+    # the current code works for categorical actions only
     def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False):
-        super(BatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
+        super(PPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
                                               hidden=hidden,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=100000, gamma=0.9)
 
-    def update(self,closs_weight):
+    def update(self,closs_weight,entropy_weight):
         # input: data  Job: finish one round of gradient update
         _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
-        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
+        self.new_lprobs, self.values, entropy = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
 
-        self.dones = torch.from_numpy(self.dones)
-        returns =  torch.from_numpy(self.rewards) + ((1-self.dones)* self.gamma+self.dones*self.gamma**2)*self.next_values.detach()
-        self.closs = closs_weight*torch.mean((returns-self.values)**2)
-        pobj = self.new_lprobs * (returns - self.values).detach()
-        self.ploss = -torch.mean(pobj)
+        # Compute clipped gradients
+        ratio = torch.exp(self.new_lprobs - torch.from_numpy(self.old_lprobs))
+        original = ratio * torch.from_numpy(self.advantages)
+        clip = torch.clip(ratio, 1 - 0.2, 1 + 0.2)
+        self.ploss = -torch.mean(torch.minimum(original, clip * torch.from_numpy(self.advantages))) + entropy_weight * torch.mean(entropy)
+
+        # minimize TD squared error or mse between returns and values???
+        # self.dones = torch.from_numpy(self.dones)
+        # self.returns =  torch.from_numpy(self.rewards) + self.gamma*(1-self.dones)*self.next_values.detach()
+        self.closs = closs_weight*torch.mean((torch.from_numpy(self.returns)-self.values)**2)
+
         self.opt.zero_grad()
         self.ploss.backward()
         self.closs.backward()
@@ -49,17 +57,21 @@ class BatchActorCritic(A):
         # Update
         if count == self.buffer_size:
             self.buffer.add_last(obs)
-            for epoch in range(1):
+            for epoch in range(self.args.epoch):
                 self.buffer.shuffle()
-                for turn in range(1):  # buffer_size//self.BS
+                for turn in range(self.buffer_size//self.BS):  # buffer_size//self.BS
                     # value functions may not be well learnt
                     self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
-                    self.update(self.args.LAMBDA_2)
+                    self.all_frames = self.buffer.all_frames()
+                    _,self.values,_ = self.network.forward(torch.from_numpy(self.all_frames),
+                                                         torch.from_numpy(np.zeros(self.buffer_size)))
+                    self.returns,self.advantages = self.buffer.compute_gae(self.values)
+                    self.update(self.args.LAMBDA_2,self.args.LAMBDA_1)
                     # self.scheduler.step()
+                print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
             self.buffer.empty()
 
-            # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
             loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
             count = 0
             return loss,count

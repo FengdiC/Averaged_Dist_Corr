@@ -19,12 +19,12 @@ def argsparser():
     parser.add_argument('--lr_decay', type=float, help='The decay step for learning rate schedule', default=1e5)
     parser.add_argument('--batch_size', type=int, help='Max Episode Length', default=64)
     parser.add_argument('--buffer', type=int, help='Buffer size', default=64)
-    parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=1)
+    parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=10)
 
     parser.add_argument('--gamma', type=float, help='Max Episode Length', default=0.99)
     parser.add_argument('--lam', type=float, help='Max Episode Length', default=0.95)
     parser.add_argument('--lr', type=float, help='Max Episode Length', default=0.0003)
-    parser.add_argument('--LAMBDA_1', type=float, help='Lambda 1 for entropy', default=0.05)
+    parser.add_argument('--LAMBDA_1', type=float, help='Lambda 1 for entropy', default=0)
     parser.add_argument('--LAMBDA_2', type=float, help='Lambda 1 for mse', default=10)
     return parser.parse_args()
 

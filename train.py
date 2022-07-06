@@ -1,5 +1,5 @@
 import torch
-from torch import nn
+from Components.env import TaskWrapper
 import numpy as np
 from Components.utils import argsparser
 import gym
@@ -10,7 +10,7 @@ def train(args):
     seed = args.seed
 
     # Create Env
-    env = gym.make(args.env)
+    env = TaskWrapper(args.env)
     env.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -30,7 +30,6 @@ def train(args):
     avgrets = []
     losses = []
     avglos = []
-    # op = meanstdnormalizaer(env.reset())
     op = env.reset()
 
     num_steps = 5000000
@@ -45,7 +44,6 @@ def train(args):
         agent.store(op,r,done,a,lprob,time)
 
         # Observe
-        # op = meanstdnormalizaer(obs)
         op = obs
         time += 1
         count += 1
@@ -62,7 +60,6 @@ def train(args):
             rets.append(ret)
             ret = 0
             time = 0
-            # op =  meanstdnormalizaer(env.reset())
             op = env.reset()
 
         if (steps + 1) % checkpoint == 0:
@@ -72,14 +69,14 @@ def train(args):
             avglos.append(np.mean(losses))
             rets = []
             losses = []
-            # plt.clf()
-            # plt.subplot(211)
-            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-            # plt.subplot(212)
-            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            # plt.pause(0.001)
+            plt.clf()
+            plt.subplot(211)
+            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
+            plt.subplot(212)
+            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
+            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            plt.pause(0.001)
     return avgrets
 
 
