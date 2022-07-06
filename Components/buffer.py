@@ -67,15 +67,18 @@ class Buffer(A):
         self.returns = np.zeros(self.size)
         self.returns[-1] = self.values[-1]
         for i in reversed(range(self.size-1)):
-            self.returns[i] = self.rewards[i] + \
-                              ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2)*self.returns[i+1]
+            # self.returns[i] = self.rewards[i] + \
+            #                   ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2)*self.returns[i+1]
+            self.returns[i] = self.rewards[i] + (1 - self.dones[i]) * self.args.gamma * self.returns[i + 1]
 
         self.advantages = np.zeros(self.size)
         self.advantages[-1] = self.returns[-1] - self.values[-1]
         for i in reversed(range(self.size - 1)):
-            self.advantages[i] = self.rewards[i] + \
-                                 ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2) * self.values[i + 1] - self.values[i] \
-                                + ((1-self.dones[i])* self.args.gamma*self.args.lam+self.dones[i]*(self.args.gamma*self.args.lam)**2) * self.advantages[i + 1]
+            # self.advantages[i] = self.rewards[i] + \
+            #                      ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2) * self.values[i + 1] - self.values[i] \
+            #                     + ((1-self.dones[i])* self.args.gamma*self.args.lam+self.dones[i]*(self.args.gamma*self.args.lam)**2) * self.advantages[i + 1]
+            self.advantages[i] = self.rewards[i] + (1 - self.dones[i]) * self.args.gamma * self.values[i + 1] - self.values[i] \
+                                 + (1 - self.dones[i]) * self.args.gamma * self.args.lam * self.advantages[i + 1]
         # self.returns = (self.returns - np.mean(self.returns)) / (np.std(self.returns) + eps)
         # self.advantages = (self.advantages - np.mean(self.advantages)) / (np.std(self.advantages) + np.finfo(float).eps)
         return np.copy(self.returns[self.index]), np.copy(self.advantages[self.index])
