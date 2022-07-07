@@ -13,15 +13,15 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['ppo','weighted_ppo'],'epoch':[10]}
+param = {'agent':['batch_ac','weighted_batch_ac'],'epoch':[1,15,20]}
 args = utils.argsparser()
 args.batch_size = 64
 args.buffer = 64
 args.lr = 0.0003
 args.LAMBDA_2 = 10
-args.gamma=0.99
+args.gamma=0.9
 
-logger.configure(args.log_dir,['csv'], log_suffix='PPO-hyperparam-tune')
+logger.configure(args.log_dir,['csv'], log_suffix='batchAC-hyperparam-tune')
 
 for values in list(itertools.product(param['agent'],param['epoch'])):
     args.agent = values[0]
@@ -31,7 +31,7 @@ for values in list(itertools.product(param['agent'],param['epoch'])):
 	
     if args.agent=='batch_ac' and args.epoch>1:
         continue
-    if args.agent == 'weighted_batch_ac' and args.epoch!=10:
+    if args.agent == 'weighted_batch_ac' and args.epoch==1:
         continue
 
     for seed in seeds:

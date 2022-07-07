@@ -80,5 +80,5 @@ def train(args):
     return avgrets
 
 
-args = argsparser()
-train(args)
+# args = argsparser()
+# train(args)
