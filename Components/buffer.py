@@ -80,5 +80,5 @@ class Buffer(A):
             self.advantages[i] = self.rewards[i] + (1 - self.dones[i]) * self.args.gamma * self.values[i + 1] - self.values[i] \
                                  + (1 - self.dones[i]) * self.args.gamma * self.args.lam * self.advantages[i + 1]
         # self.returns = (self.returns - np.mean(self.returns)) / (np.std(self.returns) + eps)
-        # self.advantages = (self.advantages - np.mean(self.advantages)) / (np.std(self.advantages) + np.finfo(float).eps)
+        self.advantages = (self.advantages - np.mean(self.advantages)) / (np.std(self.advantages) + np.finfo(float).eps)
         return np.copy(self.returns[self.index]), np.copy(self.advantages[self.index])

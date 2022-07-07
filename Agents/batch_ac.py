@@ -22,7 +22,8 @@ class BatchActorCritic(A):
         self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
 
         self.dones = torch.from_numpy(self.dones)
-        returns =  torch.from_numpy(self.rewards) + ((1-self.dones)* self.gamma+self.dones*self.gamma**2)*self.next_values.detach()
+        # returns =  torch.from_numpy(self.rewards) + ((1-self.dones)* self.gamma+self.dones*self.gamma**2)*self.next_values.detach()
+        returns = torch.from_numpy(self.rewards) + (1 - self.dones) * self.gamma* self.next_values.detach()
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
         pobj = self.new_lprobs * (returns - self.values).detach()
         self.ploss = -torch.mean(pobj)

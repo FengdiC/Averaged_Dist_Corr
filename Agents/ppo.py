@@ -69,7 +69,7 @@ class PPO(A):
                     self.returns,self.advantages = self.buffer.compute_gae(self.values)
                     self.update(self.args.LAMBDA_2,self.args.LAMBDA_1)
                     # self.scheduler.step()
-                print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
+                # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
             self.buffer.empty()
 
             loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
