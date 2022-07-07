@@ -10,7 +10,7 @@ def train(args):
     seed = args.seed
 
     # Create Env
-    env = TaskWrapper(args.env)
+    env = gym.make(args.env)
     env.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
