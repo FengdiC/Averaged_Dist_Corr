@@ -7,9 +7,11 @@ class Buffer(A):
     def __init__(self,args,o_dim,n_actions=0,size=2000):
         super(Buffer,self).__init__(args=args,o_dim=o_dim,n_actions=n_actions,size=size)
         self.frames= np.zeros((size+1,o_dim))
-        self.actions = np.zeros(size)
+
         if self.n_actions>0:
-            self.action= np.zeros((size,n_actions),np.float32)
+            self.actions= np.zeros((size,n_actions),np.float32)
+        else:
+            self.actions = np.zeros(size)
         self.rewards = np.zeros(size)
         self.dones=np.zeros(size)
         self.current_size=0
@@ -20,9 +22,11 @@ class Buffer(A):
     def empty(self):
         size=self.size
         self.frames = np.zeros((size+1, self.o_dim))
-        self.actions = np.zeros(size)
+
         if self.n_actions > 0:
-            self.action = np.zeros((size, self.n_actions), np.float32)
+            self.actions = np.zeros((size, self.n_actions), np.float32)
+        else:
+            self.actions = np.zeros(size)
         self.rewards = np.zeros(size)
         self.dones = np.zeros(size)
         self.current_size = 0
@@ -36,7 +40,7 @@ class Buffer(A):
         if self.n_actions==0:
             self.actions[self.current_size] = int(action)
         else:
-            self.actions[self.current_size,:] = np.array(action)
+            self.actions[self.current_size,:] = action
         self.rewards[self.current_size] = reward
         self.dones[self.current_size] = float(done)
         self.old_probs[self.current_size] = lprob

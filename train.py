@@ -15,11 +15,17 @@ def train(args):
     torch.manual_seed(seed)
     np.random.seed(seed)
     o_dim = env.observation_space.shape[0]
-    a_dim = env.action_space.n
+    if args.continuous:
+        a_dim= env.action_space.shape[0]
+    else:
+        a_dim = env.action_space.n
 
     # Set the agent
     network = agents_dict[args.agent]
-    agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden)
+    if args.continuous:
+        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,continuous=True)
+    else:
+        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden)
 
     # Experiment block starts
     # Create the buffer
@@ -32,7 +38,7 @@ def train(args):
     avglos = []
     op = env.reset()
 
-    num_steps = 5000000
+    num_steps = 2000000
     checkpoint = 10000
     num_episode = 0
     count = 0
@@ -69,16 +75,16 @@ def train(args):
             avglos.append(np.mean(losses))
             rets = []
             losses = []
-            plt.clf()
-            plt.subplot(211)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-            plt.subplot(212)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
+            # plt.clf()
+            # plt.subplot(211)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
+            # plt.subplot(212)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
+            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            # plt.pause(0.001)
     return avgrets
 
 
-# args = argsparser()
-# train(args)
+args = argsparser()
+train(args)

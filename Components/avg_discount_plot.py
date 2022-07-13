@@ -3,12 +3,13 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/CartPole_AC_small_gamma.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/CartPole_AC_large_gamma.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
+data = data.iloc[:,:250]
 gamma = 0.99
 
-param = {'agent':['batch_ac','weighted_batch_ac'],'epoch':[1,10]}
+param = {'agent':['batch_ac','naive_batch_ac','weighted_batch_ac'],'epoch':[1,10]}
 seeds = range(4)
 steps = list(data)
 plt.figure()
@@ -19,7 +20,9 @@ for values in list(itertools.product(param['agent'], param['epoch'])):
     line_name = '-'.join(['agent',str(values[0])])
     if agent == 'batch_ac' and epoch > 1:
         continue
-    if agent == 'weighted_batch_ac' and epoch!=10:
+    if agent == 'naive_batch_ac' and epoch > 1:
+        continue
+    if agent == 'weighted_batch_ac' and epoch==1:
         continue
 
     for seed in seeds:

@@ -13,31 +13,32 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['ppo','weighted_ppo'],'epoch':[10]}
+param = {'agent':['ppo','weighted_ppo'],'naive':[True, False]}
 args = utils.argsparser()
-args.batch_size = 64
-args.buffer = 64
+args.batch_size = 100
+args.buffer = 2000
 args.lr = 0.0003
 args.LAMBDA_2 = 10
-args.gamma=0.99
+args.gamma=0.995
+args.continuous = True
 
-logger.configure(args.log_dir,['csv'], log_suffix='PPO-hyperparam-tune')
+logger.configure(args.log_dir,['csv'], log_suffix='hopper-ppo-hyperparam-tune')
 
 for values in list(itertools.product(param['agent'],param['epoch'])):
     args.agent = values[0]
-    args.epoch = values[1]
-    seeds = range(10)
+    args.naive = bool(values[1])
+    seeds = range(5)
     result = []
 	
     if args.agent=='batch_ac' and args.epoch>1:
         continue
-    if args.agent == 'weighted_batch_ac' and args.epoch!=10:
+    if args.agent == 'weighted_ppo' and args.naive==True:
         continue
 
     for seed in seeds:
         args.seed= seed
 
-        num_steps = 5000000
+        num_steps = 2000000
         checkpoint = 10000
         result =train(args)
 

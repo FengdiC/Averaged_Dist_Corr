@@ -16,7 +16,7 @@ class WeightedBatchActorCritic(A):
         self.weight_network = AvgDiscount(o_dim,hidden)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=100000, gamma=0.9)
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
 
     def update(self,closs_weight):
         # input: data  Job: finish one round of gradient update

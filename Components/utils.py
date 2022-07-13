@@ -25,7 +25,9 @@ def argsparser():
     parser.add_argument('--lam', type=float, help='Max Episode Length', default=0.95)
     parser.add_argument('--lr', type=float, help='Max Episode Length', default=0.0003)
     parser.add_argument('--LAMBDA_1', type=float, help='Lambda 1 for entropy', default=0)
-    parser.add_argument('--LAMBDA_2', type=float, help='Lambda 1 for mse', default=10)
+    parser.add_argument('--LAMBDA_2', type=float, help='Lambda 2 for mse', default=10)
+    parser.add_argument('--naive', type=bool, help='IF add on naive gamma power correction', default=True)
+    parser.add_argument('--continuous', type=bool, help='whether actions are continuous', default=False)
     return parser.parse_args()
 
 class TargetNetworkUpdater:

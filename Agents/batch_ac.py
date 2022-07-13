@@ -14,9 +14,9 @@ class BatchActorCritic(A):
                                               hidden=hidden,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
-        self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=100000, gamma=0.9)
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
 
-    def update(self,closs_weight):
+    def update(self,closs_weight,naive=True):
         # input: data  Job: finish one round of gradient update
         _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
         self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
@@ -25,7 +25,10 @@ class BatchActorCritic(A):
         # returns =  torch.from_numpy(self.rewards) + ((1-self.dones)* self.gamma+self.dones*self.gamma**2)*self.next_values.detach()
         returns = torch.from_numpy(self.rewards) + (1 - self.dones) * self.gamma* self.next_values.detach()
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
-        pobj = self.new_lprobs * (returns - self.values).detach()
+        if naive:
+            pobj = self.gamma**torch.from_numpy(self.times) * self.new_lprobs * (returns - self.values).detach()
+        else:
+            pobj = self.new_lprobs * (returns - self.values).detach()
         self.ploss = -torch.mean(pobj)
         self.opt.zero_grad()
         self.ploss.backward()
@@ -56,7 +59,7 @@ class BatchActorCritic(A):
                     # value functions may not be well learnt
                     self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
-                    self.update(self.args.LAMBDA_2)
+                    self.update(self.args.LAMBDA_2,self.args.naive)
                     # self.scheduler.step()
             self.buffer.empty()
 

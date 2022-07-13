@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
-from Networks.actor_critic import MLPCategoricalActor
+from Networks.actor_critic import MLPCategoricalActor,MLPGaussianActor
 import gym
 from Components.utils import meanstdnormalizaer, A
 from Components.buffer import Buffer
@@ -11,14 +11,17 @@ import matplotlib.pyplot as plt
 
 class PPO(A):
     # the current code works for categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False,continuous=False):
         super(PPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,shared=shared)
-        self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
+                                              hidden=hidden,shared=shared,continuous=continuous)
+        if continuous:
+            self.network = MLPGaussianActor(o_dim,n_actions,hidden,shared)
+        else:
+            self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=100000, gamma=0.9)
 
-    def update(self,closs_weight,entropy_weight):
+    def update(self,closs_weight,entropy_weight,naive=True):
         # input: data  Job: finish one round of gradient update
         _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
         self.new_lprobs, self.values, entropy = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
@@ -27,7 +30,11 @@ class PPO(A):
         ratio = torch.exp(self.new_lprobs - torch.from_numpy(self.old_lprobs))
         original = ratio * torch.from_numpy(self.advantages)
         clip = torch.clip(ratio, 1 - 0.2, 1 + 0.2)
-        self.ploss = -torch.mean(torch.minimum(original, clip * torch.from_numpy(self.advantages))) + entropy_weight * torch.mean(entropy)
+        if naive:
+            self.ploss = -torch.mean(self.gamma**torch.from_numpy(self.times) * torch.minimum(original, clip * torch.from_numpy(self.advantages))) + entropy_weight * torch.mean(entropy)
+
+        else:
+            self.ploss = -torch.mean(torch.minimum(original, clip * torch.from_numpy(self.advantages))) + entropy_weight * torch.mean(entropy)
 
         # minimize TD squared error or mse between returns and values???
         # self.dones = torch.from_numpy(self.dones)
@@ -44,11 +51,14 @@ class PPO(A):
         self.buffer_size=buffer_size
         self.args=args
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(args, o_dim, 0, buffer_size)
+        if self.continuous:
+            self.buffer = Buffer(args, o_dim, self.n_actions, buffer_size)
+        else:
+            self.buffer = Buffer(args, o_dim, 0, buffer_size)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op))
-        return int(a.detach()), lprob.detach()
+        return a, lprob.detach()
 
     def store(self,op,r,done,a,lprob,time):
         self.buffer.add(op, r, done, a, lprob.item(), time)
@@ -64,10 +74,14 @@ class PPO(A):
                     self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
                     self.all_frames = self.buffer.all_frames()
-                    _,self.values,_ = self.network.forward(torch.from_numpy(self.all_frames),
+                    if self.continuous:
+                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames),
+                                                                 torch.from_numpy(np.zeros((self.buffer_size,self.n_actions))))
+                    else:
+                        _,self.values,_ = self.network.forward(torch.from_numpy(self.all_frames),
                                                          torch.from_numpy(np.zeros(self.buffer_size)))
                     self.returns,self.advantages = self.buffer.compute_gae(self.values)
-                    self.update(self.args.LAMBDA_2,self.args.LAMBDA_1)
+                    self.update(self.args.LAMBDA_2,self.args.LAMBDA_1,self.args.naive)
                     # self.scheduler.step()
                 # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
             self.buffer.empty()
