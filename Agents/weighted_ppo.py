@@ -61,7 +61,7 @@ class WeightedPPO(A):
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op))
-        return int(a.detach()), lprob.detach()
+        return a, lprob.detach()
 
     def store(self,op,r,done,a,lprob,time):
         self.buffer.add(op, r, done, a, lprob.item(), time)
