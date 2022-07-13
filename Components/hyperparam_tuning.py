@@ -15,6 +15,7 @@ from train import train
 #          'LAMBDA_2':[10,40],'epoch':[1]}
 param = {'agent':['ppo','weighted_ppo'],'naive':[True, False]}
 args = utils.argsparser()
+args.env='Hopper-v3'
 args.batch_size = 100
 args.buffer = 2000
 args.lr = 0.0003
@@ -24,7 +25,7 @@ args.continuous = True
 
 logger.configure(args.log_dir,['csv'], log_suffix='hopper-ppo-hyperparam-tune')
 
-for values in list(itertools.product(param['agent'],param['epoch'])):
+for values in list(itertools.product(param['agent'],param['naive'])):
     args.agent = values[0]
     args.naive = bool(values[1])
     seeds = range(5)
