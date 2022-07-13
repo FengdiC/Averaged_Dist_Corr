@@ -13,7 +13,7 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['ppo','weighted_ppo'],'naive':[True, False]}
+param = {'agent':['weighted_ppo'],'naive':[True, False]}
 args = utils.argsparser()
 args.env='Hopper-v3'
 args.batch_size = 100
