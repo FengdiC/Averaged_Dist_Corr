@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
-from Networks.actor_critic import MLPCategoricalActor
+from Networks.actor_critic import MLPCategoricalActor, MLPGaussianActor
 import gym
 from Components.utils import meanstdnormalizaer, A
 from Components.buffer import Buffer
@@ -12,10 +12,13 @@ import matplotlib.pyplot as plt
 
 class WeightedPPO(A):
     # the current code works for categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False,continuous=False):
         super(WeightedPPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
                                               hidden=hidden,shared=shared)
-        self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
+        if continuous:
+            self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared)
+        else:
+            self.network = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
         self.weight_network = AvgDiscount(o_dim, hidden)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
@@ -57,7 +60,10 @@ class WeightedPPO(A):
         self.buffer_size=buffer_size
         self.args=args
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(args, o_dim, 0, buffer_size)
+        if self.continuous:
+            self.buffer = Buffer(args, o_dim, self.n_actions, buffer_size)
+        else:
+            self.buffer = Buffer(args, o_dim, 0, buffer_size)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op))
@@ -86,8 +92,12 @@ class WeightedPPO(A):
                     self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
                     self.all_frames = self.buffer.all_frames()
-                    _,self.values,_ = self.network.forward(torch.from_numpy(self.all_frames),
-                                                         torch.from_numpy(np.zeros(self.buffer_size)))
+                    if self.continuous:
+                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames),
+                                                                 torch.from_numpy(np.zeros((self.buffer_size, self.n_actions))))
+                    else:
+                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames),
+                                                                 torch.from_numpy(np.zeros(self.buffer_size)))
                     self.returns,self.advantages = self.buffer.compute_gae(self.values)
                     self.update(self.args.LAMBDA_2,self.args.LAMBDA_1)
                     # self.scheduler.step()

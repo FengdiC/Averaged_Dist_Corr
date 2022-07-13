@@ -56,6 +56,7 @@ class MLPGaussianActor(nn.Module):
 
     def forward(self,obs,actions):
         obs = obs.float()
+        actions = actions.float()
         body = self.body(obs)
         mu = self.mu(body)
         std = self.std
