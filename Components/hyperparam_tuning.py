@@ -15,7 +15,7 @@ from train import train
 #          'LAMBDA_2':[10,40],'epoch':[1]}
 param = {'agent':['ppo','weighted_ppo'],'naive':[True, False]}
 args = utils.argsparser()
-args.env='Hopper-v4'
+args.env='Hopper-v3'
 args.batch_size = 100
 args.buffer = 2000
 args.lr = 0.0003
