@@ -13,14 +13,14 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['ppo','weighted_ppo'],'naive':[True, False]}
+param = {'agent':['weighted_ppo','ppo'],'naive':[True, False]}
 args = utils.argsparser()
 args.env='Hopper-v3'
 args.batch_size = 100
 args.buffer = 2000
 args.lr = 0.0003
 args.LAMBDA_2 = 10
-args.gamma=0.995
+args.gamma=0.99
 args.continuous = True
 
 logger.configure(args.log_dir,['csv'], log_suffix='hopper-ppo-hyperparam-tune')
@@ -28,7 +28,7 @@ logger.configure(args.log_dir,['csv'], log_suffix='hopper-ppo-hyperparam-tune')
 for values in list(itertools.product(param['agent'],param['naive'])):
     args.agent = values[0]
     args.naive = bool(values[1])
-    seeds = range(5)
+    seeds = range(3)
     result = []
 	
     if args.agent=='batch_ac' and args.epoch>1:
