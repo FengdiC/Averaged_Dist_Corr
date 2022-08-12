@@ -7,7 +7,7 @@ from config import agents_dict
 import matplotlib.pyplot as plt
 
 def train(args):
-    torch.cuda.set_device(torch.device('cuda:0'))
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     seed = args.seed
 
     # Create Env
@@ -24,9 +24,9 @@ def train(args):
     # Set the agent
     network = agents_dict[args.agent]
     if args.continuous:
-        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,continuous=True)
+        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,device,continuous=True)
     else:
-        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden)
+        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,device)
 
     # Experiment block starts
     # Create the buffer

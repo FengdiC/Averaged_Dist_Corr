@@ -12,48 +12,49 @@ import matplotlib.pyplot as plt
 
 class WeightedPPO(A):
     # the current code works for categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False,continuous=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,device,shared=False,continuous=False):
         super(WeightedPPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,shared=shared,continuous=continuous)
+                                              hidden=hidden,device=device,shared=shared,
+                                              continuous=continuous)
         if continuous:
             self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared)
         else:
             self.network = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
-        self.network.to(torch.device('cuda:0'))
+        self.network.to(device)
         self.weight_network = AvgDiscount(o_dim, hidden)
-        self.weight_network.to(torch.device('cuda:0'))
+        self.weight_network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=100000, gamma=0.9)
 
     def update_weight(self):
         # input: data  Job: finish one round of gradient update
-        self.weights = self.weight_network.forward(torch.from_numpy(self.frames).to('cuda:0'))
+        self.weights = self.weight_network.forward(torch.from_numpy(self.frames).to(self.device))
         self.labels = self.gamma**self.times
 
-        self.wloss = torch.mean((torch.from_numpy(self.labels).to('cuda:0')-self.weights)**2)
+        self.wloss = torch.mean((torch.from_numpy(self.labels).to(self.device)-self.weights)**2)
         self.weight_opt.zero_grad()
         self.wloss.backward()
         self.weight_opt.step()
 
     def update(self,closs_weight,entropy_weight):
         # input: data  Job: finish one round of gradient update
-        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames).to('cuda:0'),
-                                                     torch.from_numpy(self.actions).to('cuda:0'))
-        self.new_lprobs, self.values, entropy = self.network.forward(torch.from_numpy(self.frames).to('cuda:0'),
-                                                                     torch.from_numpy(self.actions).to('cuda:0'))
+        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames).to(self.device),
+                                                     torch.from_numpy(self.actions).to(self.device))
+        self.new_lprobs, self.values, entropy = self.network.forward(torch.from_numpy(self.frames).to(self.device),
+                                                                     torch.from_numpy(self.actions).to(self.device))
 
         # Compute clipped gradients
-        ratio = torch.exp(self.new_lprobs - torch.from_numpy(self.old_lprobs).to('cuda:0'))
-        original = ratio * torch.from_numpy(self.advantages).to('cuda:0')
+        ratio = torch.exp(self.new_lprobs - torch.from_numpy(self.old_lprobs).to(self.device))
+        original = ratio * torch.from_numpy(self.advantages).to(self.device)
         clip = torch.clip(ratio, 1 - 0.2, 1 + 0.2)
-        self.ploss = -torch.mean(torch.minimum(original, clip * torch.from_numpy(self.advantages).to('cuda:0'))) + \
+        self.ploss = -torch.mean(torch.minimum(original, clip * torch.from_numpy(self.advantages).to(self.device))) + \
                      entropy_weight * torch.mean(entropy)
 
         # minimize TD squared error or mse between returns and values???
         # self.dones = torch.from_numpy(self.dones)
         # self.returns =  torch.from_numpy(self.rewards) + self.gamma*(1-self.dones)*self.next_values.detach()
-        self.closs = closs_weight*torch.mean((torch.from_numpy(self.returns).to('cuda:0')-self.values)**2)
+        self.closs = closs_weight*torch.mean((torch.from_numpy(self.returns).to(self.device)-self.values)**2)
 
         self.opt.zero_grad()
         self.ploss.backward()
@@ -71,7 +72,7 @@ class WeightedPPO(A):
             self.buffer = Buffer(args, o_dim, 0, buffer_size)
 
     def act(self,op):
-        a, lprob = self.network.act(torch.from_numpy(op).to('cuda:0'))
+        a, lprob = self.network.act(torch.from_numpy(op).to(self.device))
         return a, lprob.detach()
 
     def store(self,op,r,done,a,lprob,time):
@@ -98,11 +99,11 @@ class WeightedPPO(A):
                         = self.buffer.sample(self.BS, turn)
                     self.all_frames = self.buffer.all_frames()
                     if self.continuous:
-                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to('cuda:0'),
-                                                                 torch.from_numpy(np.zeros((self.buffer_size, self.n_actions))).to('cuda:0'))
+                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to(self.device),
+                                                                 torch.from_numpy(np.zeros((self.buffer_size, self.n_actions))).to(self.device))
                     else:
-                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to('cuda:0'),
-                                                                 torch.from_numpy(np.zeros(self.buffer_size)).to('cuda:0'))
+                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to(self.device),
+                                                                 torch.from_numpy(np.zeros(self.buffer_size)).to(self.device))
                     self.returns,self.advantages = self.buffer.compute_gae(self.values)
                     self.update(self.args.LAMBDA_2,self.args.LAMBDA_1)
                     # self.scheduler.step()

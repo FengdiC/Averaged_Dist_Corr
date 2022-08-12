@@ -56,9 +56,9 @@ class MLPGaussianActor(nn.Module):
 
     def forward(self,obs,actions):
         obs = obs.float()
-        obs.to('cuda:0')
+        #obs.to('cuda:0')
         actions = actions.float()
-        actions.to(torch.device('cuda:0'))
+        #actions.to(torch.device('cuda:0'))
         body = self.body(obs)
         mu = self.mu(body)
         std = self.std
