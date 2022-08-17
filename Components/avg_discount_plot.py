@@ -9,7 +9,7 @@ data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:250]
 gamma = 0.99
 
-param = {'agent':['batch_ac','naive_batch_ac','weighted_batch_ac'],'epoch':[1,10]}
+param = {'agent':['ppo','naive_ppo','weighted_ppo'],'epoch':[1,10]}
 seeds = range(4)
 steps = list(data)
 plt.figure()

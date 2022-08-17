@@ -91,20 +91,23 @@ class WeightedPPO(A):
                     self.update_weight()
                     # self.scheduler.step()
 
+            self.all_frames = self.buffer.all_frames()
+            if self.continuous:
+                _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to(self.device),
+                                                         torch.from_numpy(
+                                                             np.zeros((self.buffer_size, self.n_actions))).to(
+                                                             self.device))
+            else:
+                _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to(self.device),
+                                                         torch.from_numpy(np.zeros(self.buffer_size)).to(self.device))
+            self.buffer.compute_gae(self.values)
             for epoch in range(self.args.epoch):
                 self.buffer.shuffle()
                 for turn in range(self.buffer_size//self.BS):  # buffer_size//self.BS
                     # value functions may not be well learnt
                     self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
-                    self.all_frames = self.buffer.all_frames()
-                    if self.continuous:
-                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to(self.device),
-                                                                 torch.from_numpy(np.zeros((self.buffer_size, self.n_actions))).to(self.device))
-                    else:
-                        _, self.values, _ = self.network.forward(torch.from_numpy(self.all_frames).to(self.device),
-                                                                 torch.from_numpy(np.zeros(self.buffer_size)).to(self.device))
-                    self.returns,self.advantages = self.buffer.compute_gae(self.values)
+                    self.returns,self.advantages = self.buffer.sample_adv()
                     self.update(self.args.LAMBDA_2,self.args.LAMBDA_1)
                     # self.scheduler.step()
                 # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
