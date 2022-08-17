@@ -56,11 +56,13 @@ class MLPGaussianActor(nn.Module):
 
     def forward(self,obs,actions):
         obs = obs.float()
+        #obs.to('cuda:0')
         actions = actions.float()
+        #actions.to(torch.device('cuda:0'))
         body = self.body(obs)
         mu = self.mu(body)
         std = self.std
-        dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
+        dist = torch.distributions.MultivariateNormal(mu.to('cuda:0'),torch.diag(std).to('cuda:0'))
         if self.shared:
             value = self.critic(body)
             return dist.log_prob(actions),torch.squeeze(value),dist.entropy()
@@ -71,9 +73,10 @@ class MLPGaussianActor(nn.Module):
 
     def act(self,obs):
         obs=obs.float()
+        obs.to(torch.device('cuda:0'))
         body = self.body(obs)
         mu = self.mu(body)
         std = self.std
-        dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
+        dist = torch.distributions.MultivariateNormal(mu.to('cuda:0'),torch.diag(std).to('cuda:0'))
         a = dist.sample()
-        return a.detach().numpy(), dist.log_prob(torch.as_tensor(a))
+        return a.detach().cpu().numpy(), dist.log_prob(torch.as_tensor(a))

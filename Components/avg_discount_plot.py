@@ -7,10 +7,10 @@ data = pd.read_csv('./logs/CartPole_PPO_large_gamma.csv', header=0, index_col='h
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:450]
-gamma = 0.9
+gamma = 0.99
 
-param = {'agent':['ppo','weighted_ppo'],'epoch':[10]}
-seeds = range(10)
+param = {'agent':['ppo','naive_ppo','weighted_ppo'],'epoch':[1,10]}
+seeds = range(4)
 steps = list(data)
 plt.figure()
 for values in list(itertools.product(param['agent'], param['epoch'])):

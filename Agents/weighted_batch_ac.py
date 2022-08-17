@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 
 class WeightedBatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,device=None,shared=False):
         super(WeightedBatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,shared=shared)
+                                              hidden=hidden,device=device,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
         self.weight_network = AvgDiscount(o_dim,hidden)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
