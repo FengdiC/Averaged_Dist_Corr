@@ -14,7 +14,7 @@ class WeightedPPO(A):
     # the current code works for categorical actions only
     def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,shared=False,continuous=False):
         super(WeightedPPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,shared=shared)
+                                              hidden=hidden,shared=shared,continuous=continuous)
         if continuous:
             self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared)
         else:

@@ -13,33 +13,33 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['weighted_ppo'],'naive':[True, False]}
+param = {'agent':['ppo'],'naive':[True]}
 args = utils.argsparser()
-args.env='Hopper-v3'
-args.batch_size = 100
-args.buffer = 2000
+# args.env='Hopper-v4'
+# args.batch_size = 100
+# args.buffer = 2000
 args.lr = 0.0003
 args.LAMBDA_2 = 10
-args.gamma=0.995
-args.continuous = True
+args.gamma=0.99
+# args.continuous = True
 
-logger.configure(args.log_dir,['csv'], log_suffix='hopper-ppo-hyperparam-tune')
+logger.configure(args.log_dir,['csv'], log_suffix='cartpole_ppo_naive-hyperparam-tune')
 
 for values in list(itertools.product(param['agent'],param['naive'])):
     args.agent = values[0]
     args.naive = bool(values[1])
-    seeds = range(5)
+    seeds = range(10)
     result = []
 	
-    if args.agent=='batch_ac' and args.epoch>1:
-        continue
+    # if args.agent=='batch_ac' and args.epoch>1:
+    #     continue
     if args.agent == 'weighted_ppo' and args.naive==True:
         continue
 
     for seed in seeds:
         args.seed= seed
 
-        num_steps = 2000000
+        num_steps = 500000
         checkpoint = 10000
         result =train(args)
 
