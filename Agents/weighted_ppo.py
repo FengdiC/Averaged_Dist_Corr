@@ -83,7 +83,7 @@ class WeightedPPO(A):
         # Update
         if count == self.buffer_size:
             self.buffer.add_last(obs)
-            for epoch in range(self.args.epoch):
+            for epoch in range(self.args.epoch_weight):
                 self.buffer.shuffle()
                 for turn in range(self.buffer_size // self.BS):  # buffer_size//self.BS
                     # value functions may not be well learnt
