@@ -29,7 +29,7 @@ for values in list(itertools.product(param['buffer'],param['lr'],param['epoch_we
     args.buffer = values[0]
     args.lr = values[1]
     args.epoch_weight = values[2]
-    seeds = range(10)
+    seeds = range(5)
     returns = []
 	
     # if args.agent=='batch_ac' and args.epoch>1:
