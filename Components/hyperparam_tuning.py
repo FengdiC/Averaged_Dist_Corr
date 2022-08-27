@@ -41,7 +41,6 @@ for values in list(itertools.product(param['agent'],param['naive'])):
     for seed in seeds:
         args.seed= seed
 
-        num_steps = 2500000
         checkpoint = 10000
         result =train(args)
 

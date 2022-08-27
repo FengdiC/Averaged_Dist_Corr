@@ -43,7 +43,7 @@ def train(args):
     avglos = []
     op = env.reset()
 
-    num_steps = 500000
+    num_steps = 2500000
     checkpoint = 10000
     num_episode = 0
     count = 0
