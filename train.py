@@ -5,14 +5,18 @@ from Components.utils import argsparser
 import gym
 from config import agents_dict
 import matplotlib.pyplot as plt
+from Envs.reacher import DotReacher
+import pandas as pd
+import seaborn as sns
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     seed = args.seed
 
     # Create Env
-    env = gym.make(args.env)
-    env.seed(seed)
+    # env = gym.make(args.env)
+    # env.seed(seed)
+    env = DotReacher()
     torch.manual_seed(seed)
     np.random.seed(seed)
     o_dim = env.observation_space.shape[0]
@@ -72,6 +76,8 @@ def train(args):
         if (steps + 1) % checkpoint == 0:
             # plt.rcParams["figure.figsize"]
             # gymdisplay(env,MAIN)
+            # plot_correction(env, agent, args.gamma, device)
+            # plot_est_corr(env, agent, device)
             avgrets.append(np.mean(rets))
             avglos.append(np.mean(losses))
             rets = []
@@ -81,11 +87,44 @@ def train(args):
             # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
             # plt.subplot(212)
             # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
+            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            # plt.pause(0.001)
     return avgrets
 
+def plot_correction(env,agent,gamma,device):
+    # get the policy
+    states = env.get_states()
+    policy = agent.network.get_policy(torch.from_numpy(states).to(device))
+    # get transition matrix P
+    P = env.transition_matrix(policy)
+    # compute stationary distribution
+    d_pi = np.linalg.solve(np.eye(25)-P, np.zeros(25))
+    print(np.sum(d_pi))
 
-# args = argsparser()
-# train(args)
+    correction = np.linalg.inv(np.eye(25)-gamma* np.transpose(P)) * (1-gamma) * 1/(d_pi*25)
+    print(correction.shape)
+
+    # plot heatmap
+    data = pd.DataFrame(data={'x': states[:,0], 'y': states[:,1], 'z': np.squeeze(correction)})
+    data = data.pivot(index='x', columns='y', values='z')
+    sns.heatmap(data)
+    plt.show()
+    return correction
+
+
+def plot_est_corr(env,agent,device):
+    # get the weights
+    states = env.get_states()
+    weights = agent.weight_network.forward(torch.from_numpy(states).to(device))
+
+    # plot heatmap
+    data = pd.DataFrame(data={'x': states[:, 0], 'y': states[:, 1], 'z': np.squeeze(weights)})
+    data = data.pivot(index='x', columns='y', values='z')
+    sns.heatmap(data)
+    plt.title("estimated")
+    plt.show()
+    return weights
+
+args = argsparser()
+train(args)

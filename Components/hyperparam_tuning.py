@@ -25,7 +25,7 @@ args.LAMBDA_2 = 10
 args.gamma=0.99
 args.continuous = True
 
-logger.configure(args.log_dir,['csv'], log_suffix='hopper-ppo-hyperparam-tune')
+logger.configure(args.log_dir,['csv'], log_suffix='Hopper_ppo')
 
 for values in list(itertools.product(param['agent'],param['naive'])):
     args.agent = values[0]
@@ -33,15 +33,14 @@ for values in list(itertools.product(param['agent'],param['naive'])):
     seeds = range(10)
     returns = []
 	
-    if args.agent=='batch_ac' and args.epoch>1:
-        continue
+    # if args.agent=='batch_ac' and args.epoch>1:
+    #     continue
     if args.agent == 'weighted_ppo' and args.naive==True:
         continue
 
     for seed in seeds:
         args.seed= seed
 
-        num_steps = 2500000
         checkpoint = 10000
         result =train(args)
 

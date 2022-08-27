@@ -48,8 +48,9 @@ class WeightedPPO(A):
         ratio = torch.exp(self.new_lprobs - torch.from_numpy(self.old_lprobs).to(self.device))
         original = ratio * torch.from_numpy(self.advantages).to(self.device)
         clip = torch.clip(ratio, 1 - 0.2, 1 + 0.2)
-        self.ploss = -torch.mean(torch.minimum(original, clip * torch.from_numpy(self.advantages).to(self.device))) + \
-                     entropy_weight * torch.mean(entropy)
+        self.weights = self.weight_network.forward(torch.from_numpy(self.frames).to(self.device))
+        pobj = torch.minimum(original, clip * torch.from_numpy(self.advantages).to(self.device)) * self.weights.detach()
+        self.ploss = -torch.mean(pobj) + entropy_weight * torch.mean(entropy)
 
         # minimize TD squared error or mse between returns and values???
         # self.dones = torch.from_numpy(self.dones)
