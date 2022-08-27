@@ -14,9 +14,9 @@ def train(args):
     seed = args.seed
 
     # Create Env
-    # env = gym.make(args.env)
-    # env.seed(seed)
-    env = DotReacher()
+    env = gym.make(args.env)
+    env.seed(seed)
+    # env = DotReacher()
     torch.manual_seed(seed)
     np.random.seed(seed)
     o_dim = env.observation_space.shape[0]
