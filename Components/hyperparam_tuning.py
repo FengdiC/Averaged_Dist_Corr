@@ -17,7 +17,7 @@ from train import train
 param = {'agent':['weighted_ppo','ppo'],'naive':[True, False]}
 
 args = utils.argsparser()
-args.env='Hopper-v2'
+args.env='Hopper-v3'
 args.batch_size = 128
 args.buffer = 4000
 args.lr = 0.0003
