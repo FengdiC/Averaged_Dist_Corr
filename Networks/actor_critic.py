@@ -37,6 +37,13 @@ class MLPCategoricalActor(nn.Module):
         a = dist.sample()
         return int(a), dist.log_prob(torch.as_tensor(a))
 
+    def get_policy(self,obs):
+        obs = obs.float()
+        body = self.body(obs)
+        prob = self.prob(body)
+        dist = torch.distributions.Categorical(prob)
+        return dist.probs
+
 
 class MLPGaussianActor(nn.Module):
     def __init__(self,o_dim,a_dim,hidden,shared=False):
@@ -56,13 +63,11 @@ class MLPGaussianActor(nn.Module):
 
     def forward(self,obs,actions):
         obs = obs.float()
-        #obs.to('cuda:0')
         actions = actions.float()
-        #actions.to(torch.device('cuda:0'))
         body = self.body(obs)
         mu = self.mu(body)
         std = self.std
-        dist = torch.distributions.MultivariateNormal(mu.to('cuda:0'),torch.diag(std).to('cuda:0'))
+        dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
         if self.shared:
             value = self.critic(body)
             return dist.log_prob(actions),torch.squeeze(value),dist.entropy()

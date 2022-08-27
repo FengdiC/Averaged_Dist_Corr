@@ -6,6 +6,8 @@ import gym
 from config import agents_dict
 import matplotlib.pyplot as plt
 from Envs.reacher import DotReacher
+import pandas as pd
+import seaborn as sns
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -74,6 +76,8 @@ def train(args):
         if (steps + 1) % checkpoint == 0:
             # plt.rcParams["figure.figsize"]
             # gymdisplay(env,MAIN)
+            # plot_correction(env, agent, args.gamma, device)
+            # plot_est_corr(env, agent, device)
             avgrets.append(np.mean(rets))
             avglos.append(np.mean(losses))
             rets = []
@@ -88,9 +92,39 @@ def train(args):
             # plt.pause(0.001)
     return avgrets
 
-# args = argsparser()
-# train(args)
+def plot_correction(env,agent,gamma,device):
+    # get the policy
+    states = env.get_states()
+    policy = agent.network.get_policy(torch.from_numpy(states).to(device))
+    # get transition matrix P
+    P = env.transition_matrix(policy)
+    # compute stationary distribution
+    d_pi = np.linalg.solve(np.eye(25)-P, np.zeros(25))
+    print(np.sum(d_pi))
 
-def plot_correction():
-    return -1
+    correction = np.linalg.inv(np.eye(25)-gamma* np.transpose(P)) * (1-gamma) * 1/(d_pi*25)
+    print(correction.shape)
 
+    # plot heatmap
+    data = pd.DataFrame(data={'x': states[:,0], 'y': states[:,1], 'z': np.squeeze(correction)})
+    data = data.pivot(index='x', columns='y', values='z')
+    sns.heatmap(data)
+    plt.show()
+    return correction
+
+
+def plot_est_corr(env,agent,device):
+    # get the weights
+    states = env.get_states()
+    weights = agent.weight_network.forward(torch.from_numpy(states).to(device))
+
+    # plot heatmap
+    data = pd.DataFrame(data={'x': states[:, 0], 'y': states[:, 1], 'z': np.squeeze(weights)})
+    data = data.pivot(index='x', columns='y', values='z')
+    sns.heatmap(data)
+    plt.title("estimated")
+    plt.show()
+    return weights
+
+args = argsparser()
+train(args)

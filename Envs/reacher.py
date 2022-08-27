@@ -20,8 +20,8 @@ class DotReacher(Env):
         self._obs = np.array(self._states,dtype=np.float32)
 
         self._pos_tol = 0.2
-        self._LB = np.array([-1., -1.])
-        self._UB = np.array([1., 1.])
+        self._LB = np.array([-0.8, -0.8])
+        self._UB = np.array([0.8, 0.8])
         self._timeout = timeout
         self.steps = 0
 
@@ -61,10 +61,12 @@ class DotReacher(Env):
 
         # find out the next state with the state and the action
         next_state = []
+        states = [[round(key,2) for key in item] for item in self._states]
         for i in range(len(self._states)):
             obs = self._obs[i]
             next = np.clip(self._aval + obs, self._LB, self._UB)
-            next_idx = [self._states.index(next[i].tolist()) for i in range(8)]
+            next = np.around(next,2)
+            next_idx = [states.index(next[i].tolist()) for i in range(8)]
             next_state.append(next_idx)
 
         next_state = np.array(next_state).astype(np.int32)
@@ -74,6 +76,9 @@ class DotReacher(Env):
                 P[i,next_state[i,j]] = policy[i,j]
 
         return P
+
+    def get_states(self):
+        return self._obs
 
 
 
