@@ -126,5 +126,5 @@ def plot_est_corr(env,agent,device):
     plt.show()
     return weights
 
-args = argsparser()
-train(args)
+# args = argsparser()
+# train(args)
