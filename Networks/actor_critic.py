@@ -78,10 +78,9 @@ class MLPGaussianActor(nn.Module):
 
     def act(self,obs):
         obs=obs.float()
-        obs.to(torch.device('cuda:0'))
         body = self.body(obs)
         mu = self.mu(body)
         std = self.std
-        dist = torch.distributions.MultivariateNormal(mu.to('cuda:0'),torch.diag(std).to('cuda:0'))
+        dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
         a = dist.sample()
         return a.detach().cpu().numpy(), dist.log_prob(torch.as_tensor(a))
