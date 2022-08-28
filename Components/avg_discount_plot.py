@@ -3,32 +3,32 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/CartPole_PPO_large_gamma.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/Hopper_PPO_large_gamma.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
-data = data.iloc[:,:450]
+data = data.iloc[:,:250]
 gamma = 0.99
 
-param = {'agent':['ppo','naive_ppo','weighted_ppo'],'epoch':[1,10]}
-seeds = range(4)
+param = {'agent':['ppo','weighted_ppo'],'naive':[True,False]}
+seeds = range(10)
 steps = list(data)
 plt.figure()
-for values in list(itertools.product(param['agent'], param['epoch'])):
+for values in list(itertools.product(param['agent'], param['naive'])):
     agent = values[0]
     # naive = bool(values[1])
-    epoch = values[1]
+    naive = bool(values[1])
     result = []
 
-    if agent == 'batch_ac' and epoch>1:
+    # if agent == 'batch_ac' and epoch>1:
+    #     continue
+    # if agent == 'naive_batch_ac' and epoch>1:
+    #     continue
+    if agent == "weighted_ppo" and naive==True:
         continue
-    if agent == 'naive_batch_ac' and epoch>1:
-        continue
-    if agent =="weighted_batch_ac" and epoch==1:
-        continue
-    elif agent == 'weighted_batch_ac':
+    elif agent == 'weighted_ppo':
         line_name='averaged correction'
         color = 'green'
-    elif agent == 'naive_batch_ac':
+    elif agent == 'ppo' and naive==True:
         line_name = 'existing correction'
         color = 'orange'
     else:
@@ -50,7 +50,7 @@ for values in list(itertools.product(param['agent'], param['epoch'])):
     std = np.std(results,axis=0)
     plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
 
-plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
+# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
 
 # define y_axis, x_axis
 plt.xlabel("steps")
