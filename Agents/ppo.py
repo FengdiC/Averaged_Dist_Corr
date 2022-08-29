@@ -16,7 +16,7 @@ class PPO(A):
                                               hidden=hidden,device=device,shared=shared,
                                               continuous=continuous)
         if continuous:
-            self.network = MLPGaussianActor(o_dim,n_actions,hidden,shared)
+            self.network = MLPGaussianActor(o_dim,n_actions,hidden,shared,device)
         else:
             self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
         self.network.to(device)

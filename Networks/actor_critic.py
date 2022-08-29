@@ -46,12 +46,12 @@ class MLPCategoricalActor(nn.Module):
 
 
 class MLPGaussianActor(nn.Module):
-    def __init__(self,o_dim,a_dim,hidden,shared=False):
+    def __init__(self,o_dim,a_dim,hidden,shared=False,device=None):
         super(MLPGaussianActor,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
         self.mu = nn.Linear(hidden,a_dim)
-        self.std = torch.ones(a_dim,requires_grad=True)
+        self.std = torch.ones(a_dim,requires_grad=True).to(device)
         self.shared = shared
         if self.shared:
             self.critic = nn.Linear(hidden,1)
