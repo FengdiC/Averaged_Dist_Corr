@@ -12,6 +12,7 @@ import seaborn as sns
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     seed = args.seed
+    print(device)
 
     # Create Env
     env = gym.make(args.env)
