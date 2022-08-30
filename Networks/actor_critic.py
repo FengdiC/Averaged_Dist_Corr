@@ -42,7 +42,7 @@ class MLPCategoricalActor(nn.Module):
         body = self.body(obs)
         prob = self.prob(body)
         dist = torch.distributions.Categorical(prob)
-        return dist.probs
+        return dist.probs.detach().cpu().numpy()
 
 
 class MLPGaussianActor(nn.Module):

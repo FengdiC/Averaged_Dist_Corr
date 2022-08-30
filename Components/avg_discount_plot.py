@@ -48,7 +48,8 @@ for values in list(itertools.product(param['agent'], param['naive'])):
     results = np.array(result)
     mean = np.mean(results, axis=0)
     std = np.std(results,axis=0)
-    plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
+    plt.plot(steps, mean, color=color, label=line_name)
+    # plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
 
 # plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
 

@@ -46,7 +46,7 @@ class DotReacher(Env):
 
     @property
     def action_space(self):
-        return spaces.Discrete(9)
+        return spaces.Discrete(8)
 
     @property
     def observation_space(self):
@@ -70,11 +70,11 @@ class DotReacher(Env):
             next_state.append(next_idx)
 
         next_state = np.array(next_state).astype(np.int32)
+        # this matrix of size 25 x 8 contains the indices of next states under all 8 actions
         P = np.zeros((25,25))
         for i in range(len(self._states)):
             for j in range(8):
-                P[i,next_state[i,j]] = policy[i,j]
-
+                P[i,next_state[i,j]] += policy[i,j]
         return P
 
     def get_states(self):
