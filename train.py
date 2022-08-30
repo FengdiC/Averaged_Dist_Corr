@@ -10,6 +10,7 @@ def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
     seed = args.seed
+    print(device)
 
     # Create Env
     env = gym.make(args.env)
