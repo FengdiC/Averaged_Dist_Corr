@@ -9,13 +9,17 @@ class DotReacher(Env):
     Action space, Discrete(8)
     Observation space, Box(2), positions
     """
-    def __init__(self,timeout=200):
+    def __init__(self,stepsize=0.4,timeout=200):
         # actions: up down left right
         # actions: upleft upright downleft downright
-        self._aval = 0.4 * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]
+        self._aval = stepsize * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]
                                             ], dtype=np.float32)
 
-        states = [-0.8,-0.4,0,0.4,0.8]
+        states = np.arange(0.0,1.0,stepsize)
+        print(states[-1])
+        states = np.concatenate((np.arange(-states[-1],0.0,stepsize),states))
+        states = states.tolist()
+        self.num_pt = len(states)
         self._states = list(itertools.product(states,states))
         self._obs = np.array(self._states,dtype=np.float32)
 
@@ -27,7 +31,7 @@ class DotReacher(Env):
 
     def reset(self):
         self.steps = 0
-        self.pos = self._obs[np.random.randint(0,25)]
+        self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
         obs = self.pos
         return obs
 
@@ -71,7 +75,7 @@ class DotReacher(Env):
 
         next_state = np.array(next_state).astype(np.int32)
         # this matrix of size 25 x 8 contains the indices of next states under all 8 actions
-        P = np.zeros((25,25))
+        P = np.zeros((self.num_pt**2,self.num_pt**2))
         for i in range(len(self._states)):
             for j in range(8):
                 P[i,next_state[i,j]] += policy[i,j]

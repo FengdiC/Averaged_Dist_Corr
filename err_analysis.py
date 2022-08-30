@@ -15,7 +15,7 @@ def train(args):
     seed = args.seed
 
     # Create Env
-    env = DotReacher()
+    env = DotReacher(stepsize=0.4)
     torch.manual_seed(seed)
     np.random.seed(seed)
     o_dim = env.observation_space.shape[0]
@@ -43,7 +43,7 @@ def train(args):
     avgerr = []
     op = env.reset()
 
-    num_steps = 50000
+    num_steps = 100000
     checkpoint = 1000
     num_episode = 0
     count = 0
@@ -79,6 +79,7 @@ def train(args):
             correction, d_pi = plot_correction(env, agent, args.gamma, device)
             est = plot_est_corr(env, agent, device, correction)
             err = np.matmul(d_pi, np.abs(correction - est))
+            # print(np.matmul(d_pi,correction)) #should be close to 1
             avgerr.append(err)
             avgrets.append(np.mean(rets))
             avglos.append(np.mean(losses))
@@ -86,6 +87,7 @@ def train(args):
             losses = []
             plt.clf()
             plt.subplot(311)
+            plt.ylim([-0.5, -0.0])
             plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
             plt.subplot(312)
             plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
@@ -104,24 +106,29 @@ def plot_correction(env,agent,gamma,device):
 
     # get transition matrix P
     P = env.transition_matrix(policy)
+    n = env.num_pt
     # # check if the matrix is a transition matrix
     # print(np.sum(P,axis=1))
     power = 1
-    err = np.matmul(np.ones(25),np.linalg.matrix_power(P,10*(power+1)))-\
-          np.matmul(np.ones(25), np.linalg.matrix_power(P, 10*power))
+    err = np.matmul(np.ones(n**2),np.linalg.matrix_power(P,power+1))-\
+          np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
     err = np.sum(err)
     while err > 0.00001:
         power+=1
-        err = np.matmul(np.ones(25), np.linalg.matrix_power(P, 10 * (power + 1))) - \
-              np.matmul(np.ones(25), np.linalg.matrix_power(P, 10 * power))
+        err = np.matmul(np.ones(n**2), np.linalg.matrix_power(P,  power + 1)) - \
+              np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
         err = np.sum(err)
     # print(np.sum(np.linalg.matrix_power(P, 3),axis=1))
-    d_pi = np.matmul(np.ones(25)/25.0, np.linalg.matrix_power(P, 10 * (power + 1)))
+    d_pi = np.matmul(np.ones(n**2)/float(n**2), np.linalg.matrix_power(P, power + 1))
     # print(d_pi,np.sum(d_pi))
     if np.sum(d_pi - np.matmul(np.transpose(d_pi),P))>0.0001:
         print("not the stationary distribution")
 
-    correction = np.matmul(np.linalg.inv(np.eye(25)-gamma* np.transpose(P)) , (1-gamma) * 1/(d_pi*25))
+    # compute the special transition function M
+    M = np.matmul(np.diag(d_pi) , P)
+    M = np.matmul(M, np.diag(1/d_pi))
+
+    correction = np.matmul(np.linalg.inv(np.eye(n**2)-gamma* np.transpose(M)) , (1-gamma) * 1/(d_pi*n**2))
     # print(correction.shape)
 
     # # plot heatmap
