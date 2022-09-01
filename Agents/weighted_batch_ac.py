@@ -29,7 +29,7 @@ class WeightedBatchActorCritic(A):
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
 
         self.weights = self.weight_network.forward(torch.from_numpy(self.frames))
-        pobj = self.new_lprobs * (returns - self.values).detach() *self.weights.detach()
+        pobj = self.new_lprobs * (returns - self.values).detach() *self.weights.detach() *self.buffer_size * (1-self.gamma)
         self.ploss = -torch.mean(pobj)
         self.opt.zero_grad()
         self.ploss.backward()
