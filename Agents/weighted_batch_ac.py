@@ -7,7 +7,8 @@ from torch import nn
 from Components.utils import A
 from Components.buffer import Buffer
 from Networks.weight import AvgDiscount
-from Networks.actor_critic import MLPCategoricalActor
+from Networks.actor_critic import MLPCategoricalActor, NNCategoricalActor
+from Networks.actor_critic import NNGammaCritic, NNGaussianActor
 
 
 class WeightedBatchActorCritic(A):
@@ -92,3 +93,48 @@ class WeightedBatchActorCritic(A):
         else:
             return 0,count
 
+
+class SharedWeightedCriticBatchAC(WeightedBatchActorCritic):
+    def __init__(self, lr, gamma, BS, o_dim, n_actions, hidden, args, device=None, shared=False):
+        super(WeightedBatchActorCritic, self).__init__(lr=lr, gamma=gamma, BS=BS, o_dim=o_dim, n_actions=n_actions,
+                                hidden=hidden, args=args, device=device, shared=shared)
+        self.actor = NNCategoricalActor(o_dim, n_actions, hidden, shared)
+        self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
+        self.opt = torch.optim.Adam(self.network.parameters(), lr=lr)  #decay schedule?
+        self.weight_critic_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
+
+    def update(self,closs_weight):
+        # input: data  Job: finish one round of gradient update
+        self.next_values, _ = self.weight_critic(torch.from_numpy(self.next_frames))
+        self.values, self.weights = self.weight_critic(torch.from_numpy(self.frames))
+        self.new_lprobs, _ = self.actor(torch.from_numpy(self.frames), torch.from_numpy(self.actions))
+
+        self.dones = torch.from_numpy(self.dones)
+        # returns =  torch.from_numpy(self.rewards) + [(1-self.dones)* self.args.gamma+self.dones*self.args.gamma**2]*self.next_values.detach()
+        returns = torch.from_numpy(self.rewards) + (1 - self.dones) * self.gamma * self.next_values.detach()
+        self.closs = closs_weight*torch.mean((returns-self.values)**2)
+        
+        pobj = self.new_lprobs * (returns - self.values).detach() *self.weights.detach() *self.buffer_size * (1-self.gamma)
+        self.ploss = -torch.mean(pobj)
+        
+        # Actor loss
+        self.opt.zero_grad()
+        self.ploss.backward()        
+        self.opt.step()
+
+        # Critic loss
+        self.weight_critic_opt.zero_grad()
+        self.closs.backward()
+        self.weight_critic_opt.step()
+
+
+    def update_weight(self,scale=1.0):
+        # input: data  Job: finish one round of gradient update
+        _, self.weights = self.weight_critic(torch.from_numpy(self.frames))
+        self.labels = self.gamma**self.times
+
+        self.wloss = torch.mean((torch.from_numpy(self.labels)*scale-self.weights)**2)
+        self.weight_critic_opt.zero_grad()
+        self.wloss.backward()
+        self.weight_critic_opt.step()    
