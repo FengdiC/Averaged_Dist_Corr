@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class MLPCategoricalActor(nn.Module):
     def __init__(self,o_dim,n_actions,hidden,shared=False):
         super(MLPCategoricalActor,self).__init__()
@@ -14,7 +15,6 @@ class MLPCategoricalActor(nn.Module):
             self.critic_body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
             self.critic = nn.Linear(hidden, 1)
-
 
     def forward(self,obs,actions):
         obs = obs.float()
@@ -84,3 +84,53 @@ class MLPGaussianActor(nn.Module):
         dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
         a = dist.sample()
         return a.detach().cpu().numpy(), dist.log_prob(torch.as_tensor(a))
+
+
+class NNGaussianActor(nn.Module):
+    def __init__(self, o_dim, a_dim, hidden, device=None):
+        super(NNGaussianActor, self).__init__()
+        self.body = nn.Sequential(nn.Linear(o_dim,hidden), nn.ReLU(), nn.Linear(hidden,hidden), nn.ReLU())
+        self.mu = nn.Linear(hidden, a_dim)
+        self.std = torch.ones(a_dim, requires_grad=True).to(device)
+
+    def forward(self,obs,actions):
+        obs = obs.float()
+        actions = actions.float()
+        
+        body = self.body(obs)
+        mu = self.mu(body)
+        std = self.std
+
+        dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
+        return dist.log_prob(actions), dist.entropy()
+
+    def act(self,obs):
+        obs = obs.float()
+
+        body = self.body(obs)        
+        mu = self.mu(body)
+        std = self.std
+
+        dist = torch.distributions.MultivariateNormal(mu,torch.diag(std))
+        a = dist.sample()        
+        return a.detach().cpu().numpy(), dist.log_prob(torch.as_tensor(a))
+
+
+class NNGammaCritic(nn.Module):
+    def __init__(self, o_dim, hidden, scale=1., device=None):
+        super(MLPGaussianActor,self).__init__()
+        self.body = nn.Sequential(nn.Linear(o_dim, hidden), nn.ReLU(), nn.Linear(hidden,hidden), nn.ReLU())
+        self.critic = nn.Linear(hidden, 1)
+        self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU())
+        self.scale = scale
+        self.device = device()
+        self.to(device)
+        
+    def forward(self,obs,actions):
+        obs = obs.float().to(self.device)
+        actions = actions.float().to(self.device)
+        body = self.body(obs)
+        value = self.critic(body)
+
+        weight = self.weight(body)        
+        return torch.squeeze(weight)/self.scale

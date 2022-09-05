@@ -1,11 +1,14 @@
 import torch
-from torch import nn
+
 import numpy as np
+import matplotlib.pyplot as plt
+
+from torch import nn
 from Components.utils import A
 from Components.buffer import Buffer
 from Networks.weight import AvgDiscount
 from Networks.actor_critic import MLPCategoricalActor
-import matplotlib.pyplot as plt
+
 
 class WeightedBatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
