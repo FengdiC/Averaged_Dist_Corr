@@ -1,14 +1,16 @@
 import torch
-from Components.env import TaskWrapper
-import numpy as np
-from Components.utils import argsparser
 import gym
-from config import agents_dict
+
+import numpy as np
 import matplotlib.pyplot as plt
+
+from Components.utils import argsparser
+from config import agents_dict
+from Components.env import TaskWrapper
+
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device)
     seed = args.seed
     print(device)
 
@@ -34,8 +36,9 @@ def train(args):
     # Create the buffer
     agent.create_buffer(env)
 
-    ret = 0
+    ret = step = 0
     rets = []
+    ep_lens = []
     avgrets = []
     losses = []
     avglos = []
@@ -64,11 +67,16 @@ def train(args):
         # ret += r * args.gamma**time
         # For convience
         ret += r
+        step += 1
         if done:
             num_episode += 1
             rets.append(ret)
+            ep_lens.append(step)
+            print("Episode {} ended with return {} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
+
             ret = 0
-            time = 0
+            step = 0
+            time = 0            
             op = env.reset()
 
         if (steps + 1) % checkpoint == 0:
