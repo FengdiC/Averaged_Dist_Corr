@@ -27,13 +27,13 @@ def train(args,stepsize=0.4):
     # Set the agent
     network = agents_dict[args.agent]
     if args.continuous:
-        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,device,continuous=True)
+        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,args,device,continuous=True)
     else:
-        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,device)
+        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,args,device)
 
     # Experiment block starts
     # Create the buffer
-    agent.create_buffer(env, args, args.buffer)
+    agent.create_buffer(env)
 
     ret = 0
     rets = []
@@ -66,16 +66,19 @@ def train(args,stepsize=0.4):
         # on all states or just states shown up in the last buffer. But anyhow, these states should be weighted
         # according to the stationary distribution.
         if count == agent.buffer_size:
+            all_frames = agent.buffer.all_frames()
+
+        loss,count=agent.learn(count,obs)
+        losses.append(loss)
+
+        if count == 0:
             correction, d_pi = plot_correction(env, agent, args.gamma, device)
             est = plot_est_corr(env, agent, device, correction)
             err = np.matmul(d_pi, np.abs(correction - est))
-            all_frames = agent.buffer.all_frames()
             err_ratio = bias_compare(env, all_frames, d_pi, correction, est)
             errs.append(err)
             err_ratios.append(err_ratio)
 
-        loss,count=agent.learn(count,obs)
-        losses.append(loss)
 
         # End of Episode
         # ret += r * args.gamma**time
@@ -108,11 +111,11 @@ def train(args,stepsize=0.4):
             plt.subplot(312)
             plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
             plt.subplot(313)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr_ratio)
+            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr)
             # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
             #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
             plt.pause(0.001)
-    return avgrets,avgerr_ratio
+    return avgrets,avgerr
 
 def plot_correction(env,agent,gamma,device):
     # get the policy
@@ -166,7 +169,8 @@ def plot_correction(env,agent,gamma,device):
 def plot_est_corr(env,agent,device,correction):
     # get the weights
     states = env.get_states()
-    weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy()
+    weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy() * \
+              agent.buffer_size*(1-agent.gamma)
 
     # # plot heatmap
     # data = pd.DataFrame(data={'x': states[:, 0], 'y': states[:, 1], 'z': np.squeeze(weights)})
@@ -188,27 +192,38 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     ## this method counts the number of times of each state shown in one buffer.
     states = env.get_states().tolist()
     states = [[round(key, 2) for key in item] for item in states]
+
+    discounted = correction * d_pi
     count = np.zeros(len(states))
     for i in range(all_frames.shape[0]):
         s = np.around(all_frames[i], 2)
         idx = states.index(s.tolist())
         count[idx]+=1
+    sampling = count/ all_frames.shape[0]
     indices = np.argwhere(count)
-    approx_bias = np.dot(np.transpose(d_pi[indices]),np.abs(correction[indices]-est[indices]))
-    miss_bias = np.dot(np.transpose(d_pi[indices]),np.abs(correction[indices]-count[indices]))
+    approx_bias = np.sum(np.abs(discounted[indices] * count[indices] -est[indices] * sampling[indices] * count[indices]))
+    miss_bias = np.sum(np.abs(discounted[indices] * count[indices] - sampling[indices] * count[indices]))
     # print(indices.shape[0],approx_bias, miss_bias)
     return approx_bias/miss_bias
 
 buffer_size = [5,15,25,45,64,128]
 ratio = []
+ret = []
 for buffer in buffer_size:
     args = argsparser()
     args.buffer = buffer
     args.batch_szie = buffer
-    _, avgratio = train(args)
+    avgret, avgratio = train(args,0.2)
     ratio.append(np.mean(avgratio))
+    ret.append(np.mean(avgret))
 plt.figure()
+plt.subplot(211)
 plt.plot(buffer_size,ratio)
 plt.xlabel("buffer size")
 plt.ylabel("averaged bias comparison ratio")
+plt.subplot(212)
+plt.plot(buffer_size,ret)
+plt.xlabel("buffer size")
+plt.ylabel("averaged returns")
 plt.show()
+print(ratio,ret)

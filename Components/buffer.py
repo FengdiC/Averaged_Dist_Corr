@@ -4,8 +4,8 @@ import numpy as np
 from Components.utils import A
 
 class Buffer(A):
-    def __init__(self,args,o_dim,n_actions=0,size=2000):
-        super(Buffer,self).__init__(args=args,o_dim=o_dim,n_actions=n_actions,size=size)
+    def __init__(self,gamma,lam,o_dim,n_actions=0,size=2000):
+        super(Buffer,self).__init__(gamma=gamma,lam=lam,o_dim=o_dim,n_actions=n_actions,size=size)
         self.frames= np.zeros((size+1,o_dim))
 
         if self.n_actions>0:
@@ -71,18 +71,13 @@ class Buffer(A):
         self.returns = np.zeros(self.size)
         self.returns[-1] = self.values[-1]
         for i in reversed(range(self.size-1)):
-            # self.returns[i] = self.rewards[i] + \
-            #                   ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2)*self.returns[i+1]
-            self.returns[i] = self.rewards[i] + (1 - self.dones[i]) * self.args.gamma * self.returns[i + 1]
+           self.returns[i] = self.rewards[i] + (1 - self.dones[i]) * self.gamma * self.returns[i + 1]
 
         self.advantages = np.zeros(self.size)
         self.advantages[-1] = self.returns[-1] - self.values[-1]
         for i in reversed(range(self.size - 1)):
-            # self.advantages[i] = self.rewards[i] + \
-            #                      ((1-self.dones[i])* self.args.gamma+self.dones[i]*self.args.gamma**2) * self.values[i + 1] - self.values[i] \
-            #                     + ((1-self.dones[i])* self.args.gamma*self.args.lam+self.dones[i]*(self.args.gamma*self.args.lam)**2) * self.advantages[i + 1]
-            self.advantages[i] = self.rewards[i] + (1 - self.dones[i]) * self.args.gamma * self.values[i + 1] - self.values[i] \
-                                 + (1 - self.dones[i]) * self.args.gamma * self.args.lam * self.advantages[i + 1]
+           self.advantages[i] = self.rewards[i] + (1 - self.dones[i]) * self.gamma * self.values[i + 1] - self.values[i] \
+                                 + (1 - self.dones[i]) * self.gamma * self.lam * self.advantages[i + 1]
         # self.returns = (self.returns - np.mean(self.returns)) / (np.std(self.returns) + eps)
         self.advantages = (self.advantages - np.mean(self.advantages)) / (np.std(self.advantages) + np.finfo(float).eps)
         

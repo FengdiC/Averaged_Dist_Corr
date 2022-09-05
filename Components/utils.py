@@ -21,6 +21,8 @@ def argsparser():
     parser.add_argument('--buffer', type=int, help='Buffer size', default=64)
     parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=10)
     parser.add_argument('--epoch_weight', type=int, help='Epoches for mini-batches', default=10)
+    parser.add_argument('--scale_weight', type=float, help='Scale up the powers', default=1.0)
+    parser.add_argument('--lr_weight', type=float, help='Max Episode Length', default=0.003)
 
     parser.add_argument('--gamma', type=float, help='Max Episode Length', default=0.99)
     parser.add_argument('--lam', type=float, help='Max Episode Length', default=0.95)
