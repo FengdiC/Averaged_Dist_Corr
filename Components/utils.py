@@ -1,11 +1,14 @@
-import numpy as np
+import sys
 import os
 import random
+import argparse
+
 import matplotlib.pyplot as plt
-import sys
+import numpy as np
+
 sys.path.append('/usr/local/lib/python3.6/dist-packages')
 
-import argparse
+
 def argsparser():
     parser = argparse.ArgumentParser("Tensorflow Implementation of DQN")
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
@@ -32,6 +35,7 @@ def argsparser():
     parser.add_argument('--naive', type=bool, help='IF add on naive gamma power correction', default=True)
     parser.add_argument('--continuous', type=bool, help='whether actions are continuous', default=False)
     return parser.parse_args()
+
 
 class TargetNetworkUpdater:
     """Copies the parameters of the main DQN to the target DQN"""
