@@ -117,12 +117,12 @@ class NNGaussianActor(nn.Module):
 
 class NNGammaCritic(nn.Module):
     def __init__(self, o_dim, hidden, scale=1., device=None):
-        super(MLPGaussianActor,self).__init__()
+        super(NNGammaCritic,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim, hidden), nn.ReLU(), nn.Linear(hidden,hidden), nn.ReLU())
         self.critic = nn.Linear(hidden, 1)
         self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU())
         self.scale = scale
-        self.device = device()
+        self.device = device
         self.to(device)
         
     def forward(self,obs):
@@ -136,8 +136,8 @@ class NNGammaCritic(nn.Module):
 
 
 class NNCategoricalActor(nn.Module):
-    def __init__(self,o_dim,n_actions,hidden,shared=False):
-        super(MLPCategoricalActor,self).__init__()
+    def __init__(self, o_dim, n_actions, hidden, shared=False):
+        super(NNCategoricalActor,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU(),nn.Linear(hidden,hidden),nn.ReLU())
         self.prob = nn.Sequential(nn.Linear(hidden,n_actions),nn.Softmax())
 

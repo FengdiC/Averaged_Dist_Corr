@@ -16,3 +16,4 @@ class AvgDiscount(nn.Module):
         weight = self.weight(body)
         # weight = torch.sigmoid(weight)
         return torch.squeeze(weight)/self.scale
+        
