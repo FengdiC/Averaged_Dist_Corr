@@ -60,7 +60,6 @@ class MLPGaussianActor(nn.Module):
                               ,nn.Linear(hidden,hidden),nn.ReLU())
             self.critic = nn.Linear(hidden, 1)
 
-
     def forward(self,obs,actions):
         obs = obs.float()
         actions = actions.float()
@@ -126,11 +125,40 @@ class NNGammaCritic(nn.Module):
         self.device = device()
         self.to(device)
         
-    def forward(self,obs,actions):
-        obs = obs.float().to(self.device)
-        actions = actions.float().to(self.device)
+    def forward(self,obs):
+        obs = obs.float().to(self.device)        
+
         body = self.body(obs)
         value = self.critic(body)
-
         weight = self.weight(body)        
-        return torch.squeeze(weight)/self.scale
+        
+        return torch.squeeze(value), torch.squeeze(weight)/self.scale
+
+
+class NNCategoricalActor(nn.Module):
+    def __init__(self,o_dim,n_actions,hidden,shared=False):
+        super(MLPCategoricalActor,self).__init__()
+        self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU(),nn.Linear(hidden,hidden),nn.ReLU())
+        self.prob = nn.Sequential(nn.Linear(hidden,n_actions),nn.Softmax())
+
+    def forward(self, obs, actions):
+        obs = obs.float()
+        body = self.body(obs)
+        prob = self.prob(body)
+        dist = torch.distributions.Categorical(prob)                   
+        return dist.log_prob(actions), dist.entropy()
+
+    def act(self,obs):
+        obs=obs.float()
+        body = self.body(obs)
+        prob = self.prob(body)
+        dist = torch.distributions.Categorical(prob)
+        a = dist.sample()
+        return int(a), dist.log_prob(torch.as_tensor(a))
+
+    def get_policy(self,obs):
+        obs = obs.float()
+        body = self.body(obs)
+        prob = self.prob(body)
+        dist = torch.distributions.Categorical(prob)
+        return dist.probs.detach().cpu().numpy()
