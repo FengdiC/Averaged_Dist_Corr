@@ -34,7 +34,7 @@ class AvgDiscount_sigmoid(nn.Module):
 
 class AvgDiscount_ReLU(nn.Module):
     def __init__(self,o_dim,hidden,scale=10.0):
-        super(AvgDiscount_sigmoid,self).__init__()
+        super(AvgDiscount_ReLU,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
         self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU)
@@ -48,7 +48,7 @@ class AvgDiscount_ReLU(nn.Module):
 
 class AvgDiscount_tanh(nn.Module):
     def __init__(self,o_dim,hidden,scale=1.0):
-        super(AvgDiscount_sigmoid,self).__init__()
+        super(AvgDiscount_tanh,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
         self.weight = nn.Sequential(nn.Linear(hidden,1))
