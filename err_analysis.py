@@ -6,6 +6,8 @@ import gym
 from config import agents_dict
 import matplotlib.pyplot as plt
 from Envs.reacher import DotReacher
+from Components import logger
+import itertools
 import pandas as pd
 import seaborn as sns
 
@@ -48,7 +50,7 @@ def train(args,stepsize=0.4):
     avgerr_ratio = []
     op = env.reset()
 
-    num_steps = 100000
+    num_steps = 20000
     checkpoint = 1000
     num_episode = 0
     count = 0
@@ -75,7 +77,7 @@ def train(args,stepsize=0.4):
 
         if count == 0:
             correction, d_pi = plot_correction(env, agent, args.gamma, device)
-            print("check", np.sum(correction*d_pi))
+            # print("check", np.sum(correction*d_pi))
             est = plot_est_corr(env, agent, device, correction)
             err = np.matmul(d_pi, np.abs(correction - est))
             err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
@@ -110,17 +112,16 @@ def train(args,stepsize=0.4):
             errs= []
             err_ratios = []
             errs_buffer = []
-            plt.clf()
-            plt.subplot(311)
-            plt.ylim([-0.5, -0.0])
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-            plt.subplot(312)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            plt.subplot(313)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
+            # plt.clf()
+            # plt.subplot(311)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
+            # plt.subplot(312)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
+            # plt.subplot(313)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr)
+            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            # plt.pause(0.001)
     return avgrets,avgerr,avgerr_buffer,avgerr_ratio
 
 def plot_correction(env,agent,gamma,device):
@@ -138,16 +139,16 @@ def plot_correction(env,agent,gamma,device):
     err = np.matmul(np.ones(n**2),np.linalg.matrix_power(P,power+1))-\
           np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
     err = np.sum(np.abs(err))
-    while err > 0.00001:
+    while err > 1.2:
         power+=1
         err = np.matmul(np.ones(n**2), np.linalg.matrix_power(P,  power + 1)) - \
               np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
         err = np.sum(np.abs(err))
     # print(np.sum(np.linalg.matrix_power(P, 3),axis=1))
     d_pi = np.matmul(np.ones(n**2)/float(n**2), np.linalg.matrix_power(P, power + 1))
-    print("stationary distribution",d_pi,np.sum(d_pi))
+    # print("stationary distribution",d_pi,np.sum(d_pi))
 
-    if np.sum(d_pi - np.matmul(np.transpose(d_pi),P))>0.0001:
+    if np.sum(d_pi - np.matmul(np.transpose(d_pi),P))>0.001:
         print("not the stationary distribution")
 
     # compute the special transition function M
@@ -214,23 +215,55 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     # print(indices.shape[0],approx_bias, miss_bias)
     return approx_bias/miss_bias,err_in_buffer
 
-buffer_size = [5,15,25,45,64,128]
+args = argsparser()
+logger.configure('logs/',['csv'], log_suffix='-Reacher_activation-hyperparam')
 ratio = []
 err = []
 err_buffer = []
 ret = []
-for buffer in buffer_size:
-    args = argsparser()
-    args.buffer = buffer
-    args.batch_size = buffer
-    avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.15)
-    ratio.append(np.mean(avgerr_ratio))
-    ret.append(np.mean(avgrets))
-    err.append(np.mean(avgerr))
-    err_buffer.append(np.mean(avgerr_buffer))
+buffer_size = [5,25,45,64]
+lr = [0.001,0.0006,0.0003,0.0001]
+weight_lr = [0.01,0.003,0.0003]
+weight_epoch = [1,10,15]
+weight_scale = [1,10,20]
+activation = ['sigmoid','ReLU','tanh']
+checkpoint = 1000
+
+for values in list(itertools.product(buffer_size,lr,weight_lr,weight_epoch,weight_scale,activation)):
+    args.buffer = values[0]
+    args.batch_size = values[0]
+    args.lr = values[1]
+    args.lr_weight = values[2]
+    args.epoch_weight = values[3]
+    args.scale_weight = values[4]
+    args.weight_activation = values[5]
+    if values[5]!= 'ReLU' and values[4]>1:
+        continue
+    seeds = range(5)
+    for seed in seeds:
+        avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.2)
+        ratio.append(np.mean(avgerr_ratio))
+        ret.append(np.mean(avgrets))
+        err.append(np.mean(avgerr))
+        err_buffer.append(np.mean(avgerr_buffer))
+
+        name = [str(k) for k in values]
+        name.append(str(seed))
+        logger.logkv("hyperparam-rets", '-'.join(name))
+        for n in range(len(avgrets)):
+            logger.logkv(str((n + 1) * checkpoint), avgrets[n])
+        logger.logkv("hyperparam-errs", '-'.join(name))
+        for n in range(len(avgrets)):
+            logger.logkv(str((n + 1) * checkpoint), avgerr[n])
+        logger.logkv("hyperparam-err-ratio", '-'.join(name))
+        for n in range(len(avgrets)):
+            logger.logkv(str((n + 1) * checkpoint), avgerr_ratio[n])
+        logger.logkv("hyperparam-err-buffer", '-'.join(name))
+        for n in range(len(avgrets)):
+            logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
 plt.figure()
 plt.subplot(211)
-plt.plot(buffer_size,ratio)
+plt.plot(buffer_size,err_buffer)
 plt.xlabel("buffer size")
 plt.ylabel("averaged bias comparison ratio")
 plt.subplot(212)
@@ -238,4 +271,3 @@ plt.plot(buffer_size,err)
 plt.xlabel("buffer size")
 plt.ylabel("averaged returns")
 plt.show()
-print(ratio,ret,err,err_buffer)
