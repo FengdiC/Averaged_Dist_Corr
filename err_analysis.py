@@ -38,11 +38,13 @@ def train(args,stepsize=0.4):
     ret = 0
     rets = []
     errs= []
+    errs_buffer=[]
     err_ratios= []
     avgrets = []
     losses = []
     avglos = []
     avgerr = []
+    avgerr_buffer = []
     avgerr_ratio = []
     op = env.reset()
 
@@ -73,10 +75,12 @@ def train(args,stepsize=0.4):
 
         if count == 0:
             correction, d_pi = plot_correction(env, agent, args.gamma, device)
+            print("check", np.sum(correction*d_pi))
             est = plot_est_corr(env, agent, device, correction)
             err = np.matmul(d_pi, np.abs(correction - est))
-            err_ratio = bias_compare(env, all_frames, d_pi, correction, est)
+            err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
             errs.append(err)
+            errs_buffer.append(err_buffer)
             err_ratios.append(err_ratio)
 
 
@@ -98,12 +102,14 @@ def train(args,stepsize=0.4):
             # print(np.matmul(d_pi,correction)) #should be close to 1
             avgerr.append(np.mean(errs))
             avgerr_ratio.append(np.mean(err_ratios))
+            avgerr_buffer.append(np.mean(errs_buffer))
             avgrets.append(np.mean(rets))
             avglos.append(np.mean(losses))
             rets = []
             losses = []
             errs= []
             err_ratios = []
+            errs_buffer = []
             plt.clf()
             plt.subplot(311)
             plt.ylim([-0.5, -0.0])
@@ -115,7 +121,7 @@ def train(args,stepsize=0.4):
             # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
             #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
             plt.pause(0.001)
-    return avgrets,avgerr
+    return avgrets,avgerr,avgerr_buffer,avgerr_ratio
 
 def plot_correction(env,agent,gamma,device):
     # get the policy
@@ -131,15 +137,16 @@ def plot_correction(env,agent,gamma,device):
     power = 1
     err = np.matmul(np.ones(n**2),np.linalg.matrix_power(P,power+1))-\
           np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
-    err = np.sum(err)
+    err = np.sum(np.abs(err))
     while err > 0.00001:
         power+=1
         err = np.matmul(np.ones(n**2), np.linalg.matrix_power(P,  power + 1)) - \
               np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
-        err = np.sum(err)
+        err = np.sum(np.abs(err))
     # print(np.sum(np.linalg.matrix_power(P, 3),axis=1))
     d_pi = np.matmul(np.ones(n**2)/float(n**2), np.linalg.matrix_power(P, power + 1))
-    # print(d_pi,np.sum(d_pi))
+    print("stationary distribution",d_pi,np.sum(d_pi))
+
     if np.sum(d_pi - np.matmul(np.transpose(d_pi),P))>0.0001:
         print("not the stationary distribution")
 
@@ -201,29 +208,34 @@ def bias_compare(env,all_frames,d_pi,correction,est):
         count[idx]+=1
     sampling = count/ all_frames.shape[0]
     indices = np.argwhere(count)
+    err_in_buffer = np.matmul(np.transpose(sampling),np.abs(correction -est))
     approx_bias = np.sum(np.abs(discounted[indices] * count[indices] -est[indices] * sampling[indices] * count[indices]))
     miss_bias = np.sum(np.abs(discounted[indices] * count[indices] - sampling[indices] * count[indices]))
     # print(indices.shape[0],approx_bias, miss_bias)
-    return approx_bias/miss_bias
+    return approx_bias/miss_bias,err_in_buffer
 
 buffer_size = [5,15,25,45,64,128]
 ratio = []
+err = []
+err_buffer = []
 ret = []
 for buffer in buffer_size:
     args = argsparser()
     args.buffer = buffer
-    args.batch_szie = buffer
-    avgret, avgratio = train(args,0.2)
-    ratio.append(np.mean(avgratio))
-    ret.append(np.mean(avgret))
+    args.batch_size = buffer
+    avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.15)
+    ratio.append(np.mean(avgerr_ratio))
+    ret.append(np.mean(avgrets))
+    err.append(np.mean(avgerr))
+    err_buffer.append(np.mean(avgerr_buffer))
 plt.figure()
 plt.subplot(211)
 plt.plot(buffer_size,ratio)
 plt.xlabel("buffer size")
 plt.ylabel("averaged bias comparison ratio")
 plt.subplot(212)
-plt.plot(buffer_size,ret)
+plt.plot(buffer_size,err)
 plt.xlabel("buffer size")
 plt.ylabel("averaged returns")
 plt.show()
-print(ratio,ret)
+print(ratio,ret,err,err_buffer)

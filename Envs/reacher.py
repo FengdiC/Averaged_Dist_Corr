@@ -16,16 +16,16 @@ class DotReacher(Env):
                                             ], dtype=np.float32)
 
         states = np.arange(0.0,1.0,stepsize)
-        print(states[-1])
         states = np.concatenate((np.arange(-states[-1],0.0,stepsize),states))
+        print(states)
         states = states.tolist()
         self.num_pt = len(states)
         self._states = list(itertools.product(states,states))
         self._obs = np.array(self._states,dtype=np.float32)
 
-        self._pos_tol = 0.2
-        self._LB = np.array([-0.8, -0.8])
-        self._UB = np.array([0.8, 0.8])
+        self._pos_tol = stepsize/2
+        self._LB = np.array([-states[-1], -states[-1]])
+        self._UB = np.array([states[-1], states[-1]])
         self._timeout = timeout
         self.steps = 0
 
@@ -79,6 +79,9 @@ class DotReacher(Env):
         for i in range(len(self._states)):
             for j in range(8):
                 P[i,next_state[i,j]] += policy[i,j]
+
+        terminal_idx = states.index([0,0])
+        P[terminal_idx,:] = np.ones(self.num_pt**2) / float(self.num_pt**2)
         return P
 
     def get_states(self):
