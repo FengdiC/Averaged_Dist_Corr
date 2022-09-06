@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 
 class PPO(A):
     # the current code works for categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,device,shared=False,continuous=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device,shared=False,continuous=False):
         super(PPO,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,device=device,shared=shared,
+                                              hidden=hidden,args=args,device=device,shared=shared,
                                               continuous=continuous)
         if continuous:
             self.network = MLPGaussianActor(o_dim,n_actions,hidden,shared,device)
@@ -53,15 +53,14 @@ class PPO(A):
         self.closs.backward()
         self.opt.step()
 
-    def create_buffer(self,env,args,buffer_size):
+    def create_buffer(self,env):
         # Create the buffer
-        self.buffer_size=buffer_size
-        self.args=args
+        self.buffer_size=self.args.buffer
         o_dim = env.observation_space.shape[0]
         if self.continuous:
-            self.buffer = Buffer(args, o_dim, self.n_actions, buffer_size)
+            self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, self.n_actions, self.args.buffer)
         else:
-            self.buffer = Buffer(args, o_dim, 0, buffer_size)
+            self.buffer = Buffer(self.args.gamma,self.args.lam,o_dim, 0, self.args.buffer)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op).to(self.device))

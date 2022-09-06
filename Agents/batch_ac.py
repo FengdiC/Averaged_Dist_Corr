@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 
 class BatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,device=None,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False):
         super(BatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,device=device,shared=shared)
+                                              hidden=hidden,args=args,device=device,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
@@ -35,12 +35,11 @@ class BatchActorCritic(A):
         self.closs.backward()
         self.opt.step()
 
-    def create_buffer(self,env,args,buffer_size):
+    def create_buffer(self,env):
         # Create the buffer
-        self.buffer_size=buffer_size
-        self.args=args
+        self.buffer_size=self.args.buffer
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(args, o_dim, 0, buffer_size)
+        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op))

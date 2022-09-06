@@ -10,6 +10,7 @@ def argsparser():
     parser = argparse.ArgumentParser("Tensorflow Implementation of DQN")
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--agent', help='the trainer used', type=str, default='batch_ac')
+    parser.add_argument('--weight_activation', help='the trainer used', type=str, default='sigmoid')
     parser.add_argument('--env', help='Environment name', type=str, default='CartPole-v1')
     parser.add_argument('--log_dir', help='log direction', type=str, default='./logs/')
 
@@ -21,6 +22,8 @@ def argsparser():
     parser.add_argument('--buffer', type=int, help='Buffer size', default=64)
     parser.add_argument('--epoch', type=int, help='Epoches for mini-batches', default=10)
     parser.add_argument('--epoch_weight', type=int, help='Epoches for mini-batches', default=10)
+    parser.add_argument('--scale_weight', type=float, help='Scale up the powers', default=1.0)
+    parser.add_argument('--lr_weight', type=float, help='Max Episode Length', default=0.003)
 
     parser.add_argument('--gamma', type=float, help='Max Episode Length', default=0.99)
     parser.add_argument('--lam', type=float, help='Max Episode Length', default=0.95)

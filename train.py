@@ -26,13 +26,13 @@ def train(args):
     # Set the agent
     network = agents_dict[args.agent]
     if args.continuous:
-        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,device,continuous=True)
+        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,args,device,continuous=True)
     else:
-        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,device)
+        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,args,device)
 
     # Experiment block starts
     # Create the buffer
-    agent.create_buffer(env, args, args.buffer)
+    agent.create_buffer(env)
 
     ret = 0
     rets = []

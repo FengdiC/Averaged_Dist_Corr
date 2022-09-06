@@ -3,17 +3,24 @@ from torch import nn
 import numpy as np
 from Components.utils import A
 from Components.buffer import Buffer
-from Networks.weight import AvgDiscount
+from Networks.weight import AvgDiscount_sigmoid, AvgDiscount_ReLU, AvgDiscount_tanh
 from Networks.actor_critic import MLPCategoricalActor
 import matplotlib.pyplot as plt
 
 class WeightedBatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,device=None,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False):
         super(WeightedBatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,device=device,shared=shared)
+                                              hidden=hidden,args=args,device=device,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
-        self.weight_network = AvgDiscount(o_dim,hidden)
+        if args.weight_activation == 'sigmoid':
+            self.weight_network = AvgDiscount_sigmoid(o_dim,hidden,args.scale_weight)
+        elif args.weight_activation == 'ReLU':
+            self.weight_network = AvgDiscount_ReLU(o_dim,hidden,args.scale_weight)
+        else:
+            self.weight_network = AvgDiscount_tanh(o_dim, hidden, args.scale_weight)
+        self.network.to(device)
+        self.weight_network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
@@ -36,22 +43,21 @@ class WeightedBatchActorCritic(A):
         self.closs.backward()
         self.opt.step()
 
-    def update_weight(self):
+    def update_weight(self,scale=1.0):
         # input: data  Job: finish one round of gradient update
         self.weights = self.weight_network.forward(torch.from_numpy(self.frames))
         self.labels = self.gamma**self.times
 
-        self.wloss = torch.mean((torch.from_numpy(self.labels)-self.weights)**2)
+        self.wloss = torch.mean((torch.from_numpy(self.labels)*scale-self.weights)**2)
         self.weight_opt.zero_grad()
         self.wloss.backward()
         self.weight_opt.step()
 
-    def create_buffer(self,env,args,buffer_size):
+    def create_buffer(self,env):
         # Create the buffer
-        self.buffer_size=buffer_size
-        self.args=args
+        self.buffer_size=self.args.buffer
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(args, o_dim, 0, buffer_size)
+        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op))
@@ -64,13 +70,13 @@ class WeightedBatchActorCritic(A):
         # Update
         if count == self.buffer_size:
             self.buffer.add_last(obs)
-            for epoch in range(self.args.epoch):
+            for epoch in range(self.args.epoch_weight):
                 self.buffer.shuffle()
                 for turn in range(self.buffer_size // self.BS):  # buffer_size//self.BS
                     # value functions may not be well learnt
                     self.frames, self.rewards, self.dones, self.actions, self.old_lprobs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
-                    self.update_weight()
+                    self.update_weight(self.args.scale_weight)
                     # self.scheduler.step()
             # update policy and action values
             for epoch in range(1):
