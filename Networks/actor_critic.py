@@ -15,6 +15,7 @@ class MLPCategoricalActor(nn.Module):
             self.critic_body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
             self.critic = nn.Linear(hidden, 1)
+        
 
     def forward(self,obs,actions):
         obs = obs.float()

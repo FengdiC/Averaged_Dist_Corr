@@ -72,7 +72,7 @@ def train(args):
             num_episode += 1
             rets.append(ret)
             ep_lens.append(step)
-            print("Episode {} ended with return {} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
+            print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
 
             ret = 0
             step = 0

@@ -95,10 +95,17 @@ class WeightedBatchActorCritic(A):
 
 
 class SharedWeightedCriticBatchAC(A):
-    def __init__(self, lr, gamma, BS, o_dim, n_actions, hidden, args, device=None, shared=False):
+    def __init__(self, lr, gamma, BS, o_dim, n_actions, hidden, args, device=None, shared=False, continuous=False):
         super(SharedWeightedCriticBatchAC, self).__init__(lr=lr, gamma=gamma, BS=BS, o_dim=o_dim, n_actions=n_actions,
                                 hidden=hidden, args=args, device=device, shared=shared)
-        self.actor = NNCategoricalActor(o_dim, n_actions, hidden, shared)
+        self.args = args
+        self.continuous = continuous
+
+        if continuous:
+            self.actor = NNGaussianActor(o_dim, n_actions, hidden)
+        else:
+            self.actor = NNCategoricalActor(o_dim, n_actions, hidden, shared)
+
         self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
         self.opt = torch.optim.Adam(self.actor.parameters(), lr=lr)  #decay schedule?
         self.weight_critic_opt = torch.optim.Adam(self.weight_critic.parameters(), lr=lr)
@@ -135,8 +142,11 @@ class SharedWeightedCriticBatchAC(A):
         # Create the buffer
         self.buffer_size=self.args.buffer
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
-
+        n_actions = 0
+        if self.continuous:
+            n_actions = env.action_space.shape[0]
+        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, n_actions, self.args.buffer)
+        
     def act(self,op):
         a, lprob = self.actor.act(torch.from_numpy(op))
         return a, lprob.detach()
