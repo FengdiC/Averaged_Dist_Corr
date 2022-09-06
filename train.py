@@ -88,5 +88,5 @@ def train(args):
             plt.pause(0.001)
     return avgrets
 
-# args = argsparser()
-# train(args)
+args = argsparser()
+train(args)
