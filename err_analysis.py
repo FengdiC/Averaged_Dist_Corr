@@ -127,7 +127,7 @@ def train(args,stepsize=0.4):
 def plot_correction(env,agent,gamma,device):
     # get the policy
     states = env.get_states()
-    policy = agent.network.get_policy(torch.from_numpy(states).to(device))
+    policy = agent.network.get_policy(torch.from_numpy(states).to(device)).detach().cpu().numpy()
     # policy = np.ones((25,8))/8.0
 
     # get transition matrix P
