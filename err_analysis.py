@@ -216,7 +216,7 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     return approx_bias/miss_bias,err_in_buffer
 
 args = argsparser()
-logger.configure('logs/',['csv'], log_suffix='-Reacher_activation-hyperparam')
+logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_activation-hyperparam')
 ratio = []
 err = []
 err_buffer = []
@@ -230,6 +230,7 @@ activation = ['sigmoid','ReLU','tanh']
 checkpoint = 1000
 
 for values in list(itertools.product(buffer_size,lr,weight_lr,weight_epoch,weight_scale,activation)):
+    print(values)
     args.buffer = values[0]
     args.batch_size = values[0]
     args.lr = values[1]
