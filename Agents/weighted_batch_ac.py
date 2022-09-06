@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from torch import nn
 from Components.utils import A
 from Components.buffer import Buffer
-from Networks.weight import AvgDiscount
+from Networks.weight import AvgDiscount, AvgDiscount_sigmoid, AvgDiscount_ReLU, AvgDiscount_tanh
 from Networks.actor_critic import MLPCategoricalActor, NNCategoricalActor
 from Networks.actor_critic import NNGammaCritic, NNGaussianActor
 
@@ -17,7 +17,14 @@ class WeightedBatchActorCritic(A):
         super(WeightedBatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
                                               hidden=hidden,args=args,device=device,shared=shared)
         self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
-        self.weight_network = AvgDiscount(o_dim,hidden,args.scale_weight)
+        if args.weight_activation == 'sigmoid':
+            self.weight_network = AvgDiscount_sigmoid(o_dim,hidden,args.scale_weight)
+        elif args.weight_activation == 'ReLU':
+            self.weight_network = AvgDiscount_ReLU(o_dim,hidden,args.scale_weight)
+        else:
+            self.weight_network = AvgDiscount_tanh(o_dim, hidden, args.scale_weight)
+        self.network.to(device)
+        self.weight_network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
