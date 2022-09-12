@@ -1,14 +1,16 @@
 import torch
-from Components.env import TaskWrapper
-import numpy as np
-from Components.utils import argsparser
 import gym
-from config import agents_dict
+
+import numpy as np
 import matplotlib.pyplot as plt
+
+from Components.utils import argsparser
+from config import agents_dict
+from Components.env import TaskWrapper
+
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device)
     seed = args.seed
     print(device)
 
@@ -34,14 +36,15 @@ def train(args):
     # Create the buffer
     agent.create_buffer(env)
 
-    ret = 0
+    ret = step = 0
     rets = []
+    ep_lens = []
     avgrets = []
     losses = []
     avglos = []
     op = env.reset()
 
-    num_steps = 2500000
+    num_steps = 1500000
     checkpoint = 10000
     num_episode = 0
     count = 0
@@ -64,11 +67,16 @@ def train(args):
         # ret += r * args.gamma**time
         # For convience
         ret += r
+        step += 1
         if done:
             num_episode += 1
             rets.append(ret)
+            ep_lens.append(step)
+            # print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
+
             ret = 0
-            time = 0
+            step = 0
+            time = 0            
             op = env.reset()
 
         if (steps + 1) % checkpoint == 0:
@@ -78,15 +86,15 @@ def train(args):
             avglos.append(np.mean(losses))
             rets = []
             losses = []
-            plt.clf()
-            plt.subplot(211)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-            plt.subplot(212)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
+            # plt.clf()
+            # plt.subplot(211)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
+            # plt.subplot(212)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
+            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            # plt.pause(0.001)
     return avgrets
 
-args = argsparser()
-train(args)
+# args = argsparser()
+# train(args)
