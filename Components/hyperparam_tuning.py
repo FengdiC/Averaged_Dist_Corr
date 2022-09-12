@@ -13,8 +13,8 @@ from train import train
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent':['batch_ac_shared_gc'],'lr_weight':[0.0001,0.0003,0.003,0.01],
-         'closs_weight':[1,10,20]}
+param = {'agent':['batch_ac_shared_gc','batch_ac'], 'naive':[True,False],
+         'env':['CartPole-v1','MountainCar-v0','Acrobot-v1','Pendumlum-v1']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
@@ -26,22 +26,21 @@ args.scale_weight = 1.0
 args.LAMBDA_2=1.0
 args.lr_weight= 0.003
 args.gamma = 0.99
-# args.LAMBDA_2 = 10
-# args.agent='weighted_batch_ac'
+args.agent='batch_ac_shared_gc'
 
-logger.configure(args.log_dir,['csv'], log_suffix=str(args.env)+'-weighted-batch-ac-final')
+logger.configure(args.log_dir,['csv'], log_suffix='classic-control-weighted-batch-ac')
 
-for values in list(itertools.product(param['agent'],param['lr_weight'],param['closs_weight'])):
+for values in list(itertools.product(param['agent'],param['naive'],param['env'])):
     args.agent = values[0]
-    args.lr_weight = values[1]
-    args.LAMBDA_2 = values[2]
-    seeds = range(5)
+    args.naive = values[1]
+    args.env = values[2]
+    seeds = range(15)
     returns = []
 	
     # if args.agent=='batch_ac' and args.epoch>1:
     #     continue
-    # if args.agent == 'weighted_ppo' and args.naive==True:
-    #     continue
+    if args.agent == 'batch_ac_shared_gc' and args.naive==True:
+        continue
     # if args.scale_weight>1 and args.weight_activation!='ReLU':
     #     continue
 

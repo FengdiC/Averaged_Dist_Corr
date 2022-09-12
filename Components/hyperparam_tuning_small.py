@@ -13,31 +13,29 @@ from train import train
 
 # param = {'batch_size':[100,200,500,1000],'buffer':[100,200,500,1000,3000],'lr':[0.0003],
 #          'LAMBDA_2':[10,40],'epoch':[1]}
-param = {'agent':['batch_ac','weighted_batch_ac'],'epoch':[1,15,20]}
+param = {'gamma':[0.9,0.93,0.95,0.97,0.99,0.995]}
 args = utils.argsparser()
+args.agent= 'batch_ac_shared_gc'
 args.batch_size = 64
 args.buffer = 64
 args.lr = 0.0003
-args.LAMBDA_2 = 10
-args.gamma=0.9
+args.lr_weight=0.003
+args.LAMBDA_2 = 1
 
-logger.configure(args.log_dir,['csv'], log_suffix='batchAC-hyperparam-tune')
+logger.configure(args.log_dir,['csv'], log_suffix='CartPole-weighted-batch-ac-gamma')
 
-for values in list(itertools.product(param['agent'],param['epoch'])):
-    args.agent = values[0]
-    args.epoch = values[1]
-    seeds = range(10)
+for values in list(itertools.product(param['gamma'])):
+    args.gamma = values[0]
+    seeds = range(5)
     result = []
 	
-    if args.agent=='batch_ac' and args.epoch>1:
-        continue
-    if args.agent == 'weighted_batch_ac' and args.epoch==1:
-        continue
+    # if args.agent=='batch_ac' and args.epoch>1:
+    #     continue
+    # if args.agent == 'weighted_batch_ac' and args.epoch==1:
+    #     continue
 
     for seed in seeds:
         args.seed= seed
-
-        num_steps = 5000000
         checkpoint = 10000
         result =train(args)
 
