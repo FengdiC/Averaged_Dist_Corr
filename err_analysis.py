@@ -69,21 +69,21 @@ def train(args,stepsize=0.4):
         # when we compare biases from the missing discount factor and our correction approximation, should it be
         # on all states or just states shown up in the last buffer. But anyhow, these states should be weighted
         # according to the stationary distribution.
-        if count == agent.buffer_size:
-            all_frames = agent.buffer.all_frames()
+        # if count == agent.buffer_size:
+        #     all_frames = agent.buffer.all_frames()
 
         loss,count=agent.learn(count,obs)
         losses.append(loss)
 
-        if count == 0:
-            correction, d_pi = plot_correction(env, agent, args.gamma, device)
-            # print("check", np.sum(correction*d_pi))
-            est = plot_est_corr(env, agent, device, correction)
-            err = np.matmul(d_pi, np.abs(correction - est))
-            err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
-            errs.append(err)
-            errs_buffer.append(err_buffer)
-            err_ratios.append(err_ratio)
+        # if count == 0:
+        #     correction, d_pi = plot_correction(env, agent, args.gamma, device)
+        #     # print("check", np.sum(correction*d_pi))
+        #     est = plot_est_corr(env, agent, device, correction)
+        #     err = np.matmul(d_pi, np.abs(correction - est))
+        #     err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
+        #     errs.append(err)
+        #     errs_buffer.append(err_buffer)
+        #     err_ratios.append(err_ratio)
 
 
         # End of Episode
@@ -139,7 +139,7 @@ def plot_correction(env,agent,gamma,device):
     err = np.matmul(np.ones(n**2),np.linalg.matrix_power(P,power+1))-\
           np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
     err = np.sum(np.abs(err))
-    while err > 1.2:
+    while err > 1.2 and power<5:
         power+=1
         err = np.matmul(np.ones(n**2), np.linalg.matrix_power(P,  power + 1)) - \
               np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
@@ -231,6 +231,7 @@ checkpoint = 1000
 
 for values in list(itertools.product(buffer_size,lr,weight_lr,weight_epoch,weight_scale,activation)):
     print(values)
+
     args.buffer = values[0]
     args.batch_size = values[0]
     args.lr = values[1]
@@ -253,15 +254,16 @@ for values in list(itertools.product(buffer_size,lr,weight_lr,weight_epoch,weigh
         logger.logkv("hyperparam-rets", '-'.join(name))
         for n in range(len(avgrets)):
             logger.logkv(str((n + 1) * checkpoint), avgrets[n])
-        logger.logkv("hyperparam-errs", '-'.join(name))
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgerr[n])
-        logger.logkv("hyperparam-err-ratio", '-'.join(name))
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgerr_ratio[n])
-        logger.logkv("hyperparam-err-buffer", '-'.join(name))
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
+        # logger.logkv("hyperparam-errs", '-'.join(name))
+        # for n in range(len(avgrets)):
+        #     logger.logkv(str((n + 1) * checkpoint), avgerr[n])
+        # logger.logkv("hyperparam-err-ratio", '-'.join(name))
+        # for n in range(len(avgrets)):
+        #     logger.logkv(str((n + 1) * checkpoint), avgerr_ratio[n])
+        # logger.logkv("hyperparam-err-buffer", '-'.join(name))
+        # for n in range(len(avgrets)):
+        #     logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
+        logger.dumpkvs()
 plt.figure()
 plt.subplot(211)
 plt.plot(buffer_size,err_buffer)
