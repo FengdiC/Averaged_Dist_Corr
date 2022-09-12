@@ -18,15 +18,17 @@ class BatchActorCritic(A):
 
     def update(self,closs_weight,naive=True):
         # input: data  Job: finish one round of gradient update
-        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
-        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
+        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames).to(self.device),
+                                                     torch.from_numpy(self.actions).to(self.device))
+        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames.to(self.device)),
+                                                              torch.from_numpy(self.actions).to(self.device))
 
-        self.dones = torch.from_numpy(self.dones)
+        self.dones = torch.from_numpy(self.dones).to(self.device)
         # returns =  torch.from_numpy(self.rewards) + ((1-self.dones)* self.gamma+self.dones*self.gamma**2)*self.next_values.detach()
-        returns = torch.from_numpy(self.rewards) + (1 - self.dones) * self.gamma* self.next_values.detach()
+        returns = torch.from_numpy(self.rewards).to(self.device) + (1 - self.dones) * self.gamma* self.next_values.detach()
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
         if naive:
-            pobj = self.gamma**torch.from_numpy(self.times) * self.new_lprobs * (returns - self.values).detach()
+            pobj = self.gamma**torch.from_numpy(self.times).to(self.device) * self.new_lprobs * (returns - self.values).detach()
         else:
             pobj = self.new_lprobs * (returns - self.values).detach()
         self.ploss = -torch.mean(pobj)
@@ -42,7 +44,7 @@ class BatchActorCritic(A):
         self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
 
     def act(self,op):
-        a, lprob = self.network.act(torch.from_numpy(op))
+        a, lprob = self.network.act(torch.from_numpy(op).to(self.device))
         return a, lprob.detach()
 
     def store(self,op,r,done,a,lprob,time):
@@ -63,7 +65,7 @@ class BatchActorCritic(A):
             self.buffer.empty()
 
             # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
-            loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
+            loss = float(self.ploss.detach().cpu().numpy() + self.closs.detach().cpu().numpy())
             count = 0
             return loss,count
         else:

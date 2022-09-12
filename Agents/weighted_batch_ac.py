@@ -27,15 +27,17 @@ class WeightedBatchActorCritic(A):
 
     def update(self,closs_weight):
         # input: data  Job: finish one round of gradient update
-        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames),torch.from_numpy(self.actions))
-        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames),torch.from_numpy(self.actions))
+        _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames).to(self.device),
+                                                     torch.from_numpy(self.actions).to(self.device))
+        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames).to(self.device),
+                                                              torch.from_numpy(self.actions).to(self.device))
 
-        self.dones = torch.from_numpy(self.dones)
+        self.dones = torch.from_numpy(self.dones).to(self.device)
         # returns =  torch.from_numpy(self.rewards) + [(1-self.dones)* self.args.gamma+self.dones*self.args.gamma**2]*self.next_values.detach()
-        returns = torch.from_numpy(self.rewards) + (1 - self.dones) * self.gamma * self.next_values.detach()
+        returns = torch.from_numpy(self.rewards).to(self.device) + (1 - self.dones) * self.gamma * self.next_values.detach()
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
 
-        self.weights = self.weight_network.forward(torch.from_numpy(self.frames))
+        self.weights = self.weight_network.forward(torch.from_numpy(self.frames).to(self.device))
         pobj = self.new_lprobs * (returns - self.values).detach() *self.weights.detach() *self.buffer_size * (1-self.gamma)
         self.ploss = -torch.mean(pobj)
         self.opt.zero_grad()
@@ -45,10 +47,10 @@ class WeightedBatchActorCritic(A):
 
     def update_weight(self,scale=1.0):
         # input: data  Job: finish one round of gradient update
-        self.weights = self.weight_network.forward(torch.from_numpy(self.frames))
+        self.weights = self.weight_network.forward(torch.from_numpy(self.frames).to(self.device))
         self.labels = self.gamma**self.times
 
-        self.wloss = torch.mean((torch.from_numpy(self.labels)*scale-self.weights)**2)
+        self.wloss = torch.mean((torch.from_numpy(self.labels).to(self.device)*scale-self.weights)**2)
         self.weight_opt.zero_grad()
         self.wloss.backward()
         self.weight_opt.step()
@@ -60,7 +62,7 @@ class WeightedBatchActorCritic(A):
         self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
 
     def act(self,op):
-        a, lprob = self.network.act(torch.from_numpy(op))
+        a, lprob = self.network.act(torch.from_numpy(op).to(self.device))
         return a, lprob.detach()
 
     def store(self,op,r,done,a,lprob,time):
@@ -90,7 +92,7 @@ class WeightedBatchActorCritic(A):
             self.buffer.empty()
 
             # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
-            loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
+            loss = float(self.ploss.detach().cpu().numpy() + self.closs.detach().cpu().numpy())
             count = 0
             return loss,count
         else:

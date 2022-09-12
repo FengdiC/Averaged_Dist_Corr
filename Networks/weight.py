@@ -37,7 +37,7 @@ class AvgDiscount_ReLU(nn.Module):
         super(AvgDiscount_ReLU,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
-        self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU)
+        self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU())
         self.scale = scale
 
     def forward(self,obs):
