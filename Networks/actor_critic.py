@@ -123,8 +123,7 @@ class NNGammaCritic(nn.Module):
         self.body = nn.Sequential(nn.Linear(o_dim, hidden), nn.ReLU(),
                                   nn.Linear(hidden,hidden), nn.ReLU())
         self.critic = nn.Linear(hidden, 1)
-        self.weight = nn.Sequential(nn.Linear(hidden,1),
-                                    nn.ReLU())
+        self.weight = nn.Sequential(nn.Linear(hidden,1))
         self.scale = scale
         self.device = device
         self.to(device)
@@ -134,7 +133,8 @@ class NNGammaCritic(nn.Module):
         body = self.body(obs)
         value = self.critic(body)
         weight = self.weight(body)
-        return torch.squeeze(value), torch.squeeze(weight)/self.scale
+        weight = torch.sigmoid(weight)
+        return torch.squeeze(value), torch.squeeze(weight)
 
 
 class NNCategoricalActor(nn.Module):

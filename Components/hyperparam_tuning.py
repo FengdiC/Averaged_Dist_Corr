@@ -13,7 +13,7 @@ from train import train
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent':['weighted_batch_ac','batch_ac_shared_gc'],'lr_weight':[0.0001,0.0003,0.003,0.01],
+param = {'agent':['batch_ac_shared_gc'],'lr_weight':[0.0001,0.0003,0.003,0.01],
          'closs_weight':[1,10,20]}
 
 args = utils.argsparser()
@@ -22,13 +22,14 @@ args = utils.argsparser()
 args.buffer=64
 args.batch_size = 64
 args.lr = 0.0003
-args.scale_weight = 10
-args.weight_activation = 'ReLU'
+args.scale_weight = 1.0
+args.LAMBDA_2=1.0
+args.lr_weight= 0.003
 args.gamma = 0.99
 # args.LAMBDA_2 = 10
 # args.agent='weighted_batch_ac'
 
-logger.configure(args.log_dir,['csv'], log_suffix=str(args.env)+'-weighted-batch-ac-shared-network')
+logger.configure(args.log_dir,['csv'], log_suffix=str(args.env)+'-weighted-batch-ac-final')
 
 for values in list(itertools.product(param['agent'],param['lr_weight'],param['closs_weight'])):
     args.agent = values[0]
