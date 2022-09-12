@@ -89,7 +89,8 @@ class MLPGaussianActor(nn.Module):
 class NNGaussianActor(nn.Module):
     def __init__(self, o_dim, a_dim, hidden, device=None):
         super(NNGaussianActor, self).__init__()
-        self.body = nn.Sequential(nn.Linear(o_dim,hidden), nn.ReLU(), nn.Linear(hidden,hidden), nn.ReLU())
+        self.body = nn.Sequential(nn.Linear(o_dim,hidden), nn.ReLU(),
+                                  nn.Linear(hidden,hidden), nn.ReLU())
         self.mu = nn.Linear(hidden, a_dim)
         self.std = torch.ones(a_dim, requires_grad=True).to(device)
 
@@ -119,20 +120,20 @@ class NNGaussianActor(nn.Module):
 class NNGammaCritic(nn.Module):
     def __init__(self, o_dim, hidden, scale=1., device=None):
         super(NNGammaCritic,self).__init__()
-        self.body = nn.Sequential(nn.Linear(o_dim, hidden), nn.ReLU(), nn.Linear(hidden,hidden), nn.ReLU())
+        self.body = nn.Sequential(nn.Linear(o_dim, hidden), nn.ReLU(),
+                                  nn.Linear(hidden,hidden), nn.ReLU())
         self.critic = nn.Linear(hidden, 1)
-        self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU())
+        self.weight = nn.Sequential(nn.Linear(hidden,1),
+                                    nn.ReLU())
         self.scale = scale
         self.device = device
         self.to(device)
         
     def forward(self,obs):
-        obs = obs.float().to(self.device)        
-
+        obs = obs.float().to(self.device)
         body = self.body(obs)
         value = self.critic(body)
-        weight = self.weight(body)        
-        
+        weight = self.weight(body)
         return torch.squeeze(value), torch.squeeze(weight)/self.scale
 
 

@@ -44,7 +44,7 @@ def train(args):
     avglos = []
     op = env.reset()
 
-    num_steps = 2500000
+    num_steps = 1500000
     checkpoint = 10000
     num_episode = 0
     count = 0
@@ -72,7 +72,7 @@ def train(args):
             num_episode += 1
             rets.append(ret)
             ep_lens.append(step)
-            print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
+            # print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
 
             ret = 0
             step = 0
@@ -86,15 +86,15 @@ def train(args):
             avglos.append(np.mean(losses))
             rets = []
             losses = []
-            plt.clf()
-            plt.subplot(211)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-            plt.subplot(212)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
+            # plt.clf()
+            # plt.subplot(211)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
+            # plt.subplot(212)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
+            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            # plt.pause(0.001)
     return avgrets
 
-args = argsparser()
-train(args)
+# args = argsparser()
+# train(args)

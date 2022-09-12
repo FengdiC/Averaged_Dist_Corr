@@ -10,7 +10,6 @@ from Networks.weight import AvgDiscount, AvgDiscount_sigmoid, AvgDiscount_ReLU, 
 from Networks.actor_critic import MLPCategoricalActor, NNCategoricalActor
 from Networks.actor_critic import NNGammaCritic, NNGaussianActor
 
-
 class WeightedBatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
     def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False):
@@ -26,7 +25,7 @@ class WeightedBatchActorCritic(A):
         self.network.to(device)
         self.weight_network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
-        self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=lr)
+        self.weight_opt = torch.optim.Adam(self.weight_network.parameters(), lr=args.lr_weight)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
 
     def update(self,closs_weight):
@@ -115,7 +114,7 @@ class SharedWeightedCriticBatchAC(A):
 
         self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
         self.opt = torch.optim.Adam(self.actor.parameters(), lr=lr)  #decay schedule?
-        self.weight_critic_opt = torch.optim.Adam(self.weight_critic.parameters(), lr=lr)
+        self.weight_critic_opt = torch.optim.Adam(self.weight_critic.parameters(), lr=args.lr_weight)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
 
     def update(self, closs_weight, scale=1.0):
@@ -171,7 +170,7 @@ class SharedWeightedCriticBatchAC(A):
                     # value functions may not be well learnt
                     self.frames, self.rewards, self.dones, self.actions, self.old_probs, self.times, self.next_frames \
                         = self.buffer.sample(self.BS, turn)
-                    self.update(self.args.LAMBDA_2)
+                    self.update(self.args.LAMBDA_2,self.args.scale_weight)
                     # self.scheduler.step()
             self.buffer.empty()
 

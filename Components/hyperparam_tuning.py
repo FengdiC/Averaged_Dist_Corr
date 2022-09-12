@@ -10,31 +10,38 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 from train import train
 
-param = {'buffer':[1024,2048,4096],'lr':[0.000125,0.0003,0.000625],'epoch_weight':[5,10,15,20]}
+# param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
+#          'scale_weight':[1.0,10.0,100.0]}
 
-# param = {'agent':['weighted_ppo','ppo'],'naive':[True, False]}
+param = {'agent':['weighted_batch_ac','batch_ac_shared_gc'],'lr_weight':[0.0001,0.0003,0.003,0.01],
+         'closs_weight':[1,10,20]}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
 
+args.buffer=64
 args.batch_size = 64
-# args.buffer = 2048
-# args.lr = 0.0003
-args.LAMBDA_2 = 10
-args.agent='weighted_ppo'
+args.lr = 0.0003
+args.scale_weight = 10
+args.weight_activation = 'ReLU'
+args.gamma = 0.99
+# args.LAMBDA_2 = 10
+# args.agent='weighted_batch_ac'
 
-logger.configure(args.log_dir,['csv'], log_suffix=str(args.env)+'-ppo-avg-param')
+logger.configure(args.log_dir,['csv'], log_suffix=str(args.env)+'-weighted-batch-ac-shared-network')
 
-for values in list(itertools.product(param['buffer'],param['lr'],param['epoch_weight'])):
-    args.buffer = values[0]
-    args.lr = values[1]
-    args.epoch_weight = values[2]
+for values in list(itertools.product(param['agent'],param['lr_weight'],param['closs_weight'])):
+    args.agent = values[0]
+    args.lr_weight = values[1]
+    args.LAMBDA_2 = values[2]
     seeds = range(5)
     returns = []
 	
     # if args.agent=='batch_ac' and args.epoch>1:
     #     continue
     # if args.agent == 'weighted_ppo' and args.naive==True:
+    #     continue
+    # if args.scale_weight>1 and args.weight_activation!='ReLU':
     #     continue
 
     for seed in seeds:
