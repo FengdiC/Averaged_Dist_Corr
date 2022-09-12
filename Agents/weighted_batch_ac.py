@@ -110,23 +110,26 @@ class SharedWeightedCriticBatchAC(A):
         self.continuous = continuous
 
         if continuous:
-            self.actor = NNGaussianActor(o_dim, n_actions, hidden)
+            self.network = NNGaussianActor(o_dim, n_actions, hidden,shared,device)
         else:
-            self.actor = NNCategoricalActor(o_dim, n_actions, hidden, shared)
+            self.network = NNCategoricalActor(o_dim, n_actions, hidden, shared)
 
         self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
-        self.opt = torch.optim.Adam(self.actor.parameters(), lr=lr)  #decay schedule?
+        self.network.to(device)
+        self.weight_critic.to(device)
+        self.opt = torch.optim.Adam(self.network.parameters(), lr=lr)  #decay schedule?
         self.weight_critic_opt = torch.optim.Adam(self.weight_critic.parameters(), lr=args.lr_weight)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
 
     def update(self, closs_weight, scale=1.0):
         # input: data  Job: finish one round of gradient update
-        self.next_values, self.weights = self.weight_critic(torch.from_numpy(self.next_frames))
-        self.values, self.weights = self.weight_critic(torch.from_numpy(self.frames))
-        self.new_lprobs, _ = self.actor(torch.from_numpy(self.frames), torch.from_numpy(self.actions))
-        
-        # returns =  torch.from_numpy(self.rewards) + [(1-self.dones)* self.args.gamma+self.dones*self.args.gamma**2]*self.next_values.detach()        
-        returns = torch.from_numpy(self.rewards) + (1 - torch.from_numpy(self.dones)) * self.gamma * self.next_values.detach()
+        self.next_values, self.weights = self.weight_critic(torch.from_numpy(self.next_frames).to(self.device))
+        self.values, self.weights = self.weight_critic(torch.from_numpy(self.frames).to(self.device))
+        self.new_lprobs, _ = self.network(torch.from_numpy(self.frames).to(self.device),
+                                          torch.from_numpy(self.actions).to(self.device))
+
+        self.dones = torch.from_numpy(self.dones).to(self.device)
+        returns = torch.from_numpy(self.rewards).to(self.device) +(1 - self.dones) * self.gamma * self.next_values.detach()
                 
         # Actor loss
         pobj = self.new_lprobs * (returns - self.values).detach() *self.weights.detach() *self.buffer_size * (1-self.gamma)
@@ -137,11 +140,10 @@ class SharedWeightedCriticBatchAC(A):
 
         # Weight & Critic loss
         ## Critic
-        self.dones = torch.from_numpy(self.dones)
         self.closs = closs_weight*torch.mean((returns-self.values)**2)
         ## Weight
         self.labels = self.gamma**self.times
-        self.wloss = torch.mean((torch.from_numpy(self.labels)*scale-self.weights)**2)
+        self.wloss = torch.mean((torch.from_numpy(self.labels).to(self.device)  *scale-self.weights)**2)
         self.weight_critic_opt.zero_grad()
         (self.closs + self.wloss).backward()
         self.weight_critic_opt.step()
@@ -156,7 +158,7 @@ class SharedWeightedCriticBatchAC(A):
         self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, n_actions, self.args.buffer)
         
     def act(self,op):
-        a, lprob = self.actor.act(torch.from_numpy(op))
+        a, lprob = self.network.act(torch.from_numpy(op).to(self.device)  )
         return a, lprob.detach()
 
     def store(self,op,r,done,a,lprob,time):
@@ -177,7 +179,7 @@ class SharedWeightedCriticBatchAC(A):
             self.buffer.empty()
 
             # print("ploss is: ", self.ploss.detach().numpy(), ":::", self.closs.detach().numpy())
-            loss = float(self.ploss.detach().numpy() + self.closs.detach().numpy())
+            loss = float(self.ploss.detach().cpu().numpy() + self.closs.detach().cpu().numpy())
             count = 0
             return loss,count
         else:
