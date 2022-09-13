@@ -110,9 +110,9 @@ class SharedWeightedCriticBatchAC(A):
         self.continuous = continuous
 
         if continuous:
-            self.network = NNGaussianActor(o_dim, n_actions, hidden,shared,device)
+            self.network = NNGaussianActor(o_dim, n_actions, hidden,device)
         else:
-            self.network = NNCategoricalActor(o_dim, n_actions, hidden, shared)
+            self.network = NNCategoricalActor(o_dim, n_actions, hidden,shared)
 
         self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
         self.network.to(device)
