@@ -41,6 +41,8 @@ for values in list(itertools.product(param['agent'],param['naive'],param['env'])
     #     continue
     if args.agent == 'batch_ac_shared_gc' and args.naive==True:
         continue
+    if args.agent != 'batch_ac_shared_gc':
+        args.LAMBDA_2 = 10.0
     # if args.scale_weight>1 and args.weight_activation!='ReLU':
     #     continue
 
