@@ -26,9 +26,8 @@ args.scale_weight = 1.0
 args.LAMBDA_2=1.0
 args.lr_weight= 0.003
 args.gamma = 0.99
-args.agent='batch_ac_shared_gc'
 
-logger.configure(args.log_dir,['csv'], log_suffix='classic-control-weighted-batch-ac-2')
+logger.configure(args.log_dir,['csv'], log_suffix='classic-control-weighted-batch-ac-part2')
 
 for values in list(itertools.product(param['agent'],param['naive'],param['env'])):
     args.agent = values[0]
