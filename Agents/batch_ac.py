@@ -21,7 +21,7 @@ class BatchActorCritic(A):
         # input: data  Job: finish one round of gradient update
         _, self.next_values,_ = self.network.forward(torch.from_numpy(self.next_frames).to(self.device),
                                                      torch.from_numpy(self.actions).to(self.device))
-        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames.to(self.device)),
+        self.new_lprobs, self.values,_ = self.network.forward(torch.from_numpy(self.frames).to(self.device),
                                                               torch.from_numpy(self.actions).to(self.device))
 
         self.dones = torch.from_numpy(self.dones).to(self.device)
