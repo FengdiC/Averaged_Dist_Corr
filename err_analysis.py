@@ -220,7 +220,7 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     return approx_bias/miss_bias,err_in_buffer
 
 args = argsparser()
-logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_shared_sigmoid-hyperparam')
+logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_shared_tanh-hyperparam')
 ratio = []
 err = []
 err_buffer = []
@@ -228,7 +228,7 @@ ret = []
 args.epoch_weight = 1
 args.lr = 0.001
 args.scale_weight = 1
-args.weight_activation = 'sigmoid'
+args.weight_activation = 'tanh'
 
 buffer_size = [5,25,45]
 weight_lr = [0.01,0.001,0.0001]

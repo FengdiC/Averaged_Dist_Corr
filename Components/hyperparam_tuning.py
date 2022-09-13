@@ -14,7 +14,7 @@ from train import train
 #          'scale_weight':[1.0,10.0,100.0]}
 
 param = {'agent':['batch_ac_shared_gc','batch_ac'], 'naive':[True,False],
-         'env':['Pendulum-v1','MountainCarContinuous-v0']}
+         'env':['Pendulum-v0','MountainCarContinuous-v0']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
