@@ -13,8 +13,8 @@ from train import train
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent':['batch_ac'], 'naive':[True,False],
-         'env':['CartPole-v1','MountainCar-v0','Acrobot-v1']}
+param = {'agent':['batch_ac_shared_gc','batch_ac'], 'naive':[True,False],
+         'env':['Pendulum-v1','MountainCarContinuous-v0']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
@@ -26,8 +26,9 @@ args.scale_weight = 1.0
 args.LAMBDA_2=1.0
 args.lr_weight= 0.003
 args.gamma = 0.99
+args.continuous=True
 
-logger.configure(args.log_dir,['csv'], log_suffix='classic-control-weighted-batch-ac-part2')
+logger.configure(args.log_dir,['csv'], log_suffix='classic-control-weighted-batch-ac-continuous')
 
 for values in list(itertools.product(param['agent'],param['naive'],param['env'])):
     args.agent = values[0]

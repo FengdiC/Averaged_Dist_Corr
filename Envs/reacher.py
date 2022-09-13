@@ -119,15 +119,29 @@ class DotReacherRepeat(Env):
         obs = self.pos
         return obs
 
+    def _restart(self):
+        self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
+        obs = self.pos
+        return obs
+
     def step(self,action):
         self.steps += 1
-        self.pos = np.clip(self.pos + self._aval[int(action-1)] ,self._LB, self._UB)
-        next_obs = self.pos
-        # Reward
-        reward = -0.01
-        # Done
         done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
-        done = done or self.steps == self._timeout
+        if done:
+            next_obs = self._restart()
+            reward = 0
+        else:
+            self.pos = np.clip(self.pos + self._aval[int(action-1)] ,self._LB, self._UB)
+            next_obs = self.pos
+            # Reward
+            reward = 0
+        # Reach goal
+        done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
+        if done:
+            reward = 1
+
+        # Check termiation
+        done = self.steps == self._timeout
         # Metadata
         info = {}
         return next_obs, reward, done, info
@@ -170,7 +184,3 @@ class DotReacherRepeat(Env):
 
     def get_states(self):
         return self._obs
-
-
-
-
