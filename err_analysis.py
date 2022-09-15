@@ -1,11 +1,10 @@
 import torch
-from Components.env import TaskWrapper
 import numpy as np
 from Components.utils import argsparser
 import gym
 from config import agents_dict
 import matplotlib.pyplot as plt
-from Envs.reacher import DotReacher
+from Envs.reacher import DotReacher, DotReacherRepeat
 from Components import logger
 import itertools
 import pandas as pd
@@ -17,7 +16,7 @@ def train(args,stepsize=0.4):
     seed = args.seed
 
     # Create Env
-    env = DotReacher(stepsize=stepsize)
+    env = DotReacherRepeat(stepsize=stepsize)
     torch.manual_seed(seed)
     np.random.seed(seed)
     o_dim = env.observation_space.shape[0]
@@ -220,28 +219,28 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     return approx_bias/miss_bias,err_in_buffer
 
 args = argsparser()
-logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_shared_tanh-hyperparam')
+logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_repeat_final')
 ratio = []
 err = []
 err_buffer = []
 ret = []
 args.epoch_weight = 1
 args.lr = 0.001
+args.lr_weight= 0.001
 args.scale_weight = 1
-args.weight_activation = 'tanh'
+args.buffer_size = 5
 
-buffer_size = [5,25,45]
-weight_lr = [0.01,0.001,0.0001]
-agent = ['batch_ac_shared_gc','weighted_batch_ac']
+agent = ['weighted_batch_ac']
+activation = ['sigmoid','ReLU','tanh']
 checkpoint = 1000
 
-for values in list(itertools.product(buffer_size,weight_lr,agent)):
+for values in list(itertools.product(activation,agent)):
     print(values)
 
-    args.buffer = values[0]
-    args.batch_size = values[0]
-    args.lr_weight = values[1]
-    args.agent = values[2]
+    args.agent = values[1]
+    args.weight_activation = values[0]
+    if args.weight_activation == 'ReLU':
+        args.scale_weight = 10.0
 
     seeds = range(5)
     for seed in seeds:
@@ -272,13 +271,13 @@ for values in list(itertools.product(buffer_size,weight_lr,agent)):
         for n in range(len(avgrets)):
             logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
         logger.dumpkvs()
-plt.figure()
-plt.subplot(211)
-plt.plot(buffer_size,err_buffer)
-plt.xlabel("buffer size")
-plt.ylabel("averaged bias comparison ratio")
-plt.subplot(212)
-plt.plot(buffer_size,err)
-plt.xlabel("buffer size")
-plt.ylabel("averaged returns")
-plt.show()
+# plt.figure()
+# plt.subplot(211)
+# plt.plot(buffer_size,err_buffer)
+# plt.xlabel("buffer size")
+# plt.ylabel("averaged bias comparison ratio")
+# plt.subplot(212)
+# plt.plot(buffer_size,err)
+# plt.xlabel("buffer size")
+# plt.ylabel("averaged returns")
+# plt.show()

@@ -3,42 +3,37 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/Reacher_shared.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/progressclassic-control-weighted-batch-ac.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
-data = data.iloc[:,:20]
+data = data.iloc[:,:150]
 
-name = ['ReLU-5-0.001-weighted_batch_ac','sigmoid-5-0.001-weighted_batch_ac','tanh-5-0.001-weighted_batch_ac',
-        'ReLU-5-0.0001-batch_ac_shared_gc','sigmoid-5-0.0001-batch_ac_shared_gc',
-        'tanh-5-0.001-batch_ac_shared_gc','batch_ac_shared_gc']
 
-seeds = range(5)
+param = {'agent': ['batch_ac_shared_gc', 'batch_ac'], 'naive': [True, False],
+         'env': ['Acrobot-v1']}
+
+seeds = range(15)
 steps = list(data)
 plt.figure()
-for values in list(itertools.product(name)):
+for values in list(itertools.product(param['agent'],param['naive'],param['env'])):
     results = []
-
-    # if agent == 'batch_ac' and epoch>1:
-    #     continue
-    # if agent == 'naive_batch_ac' and epoch>1:
-    #     continue
-    # if scale_weight>1 and weight_activation!='ReLU':
-    #     continue
-
-    # if weight_activation == "sigmoid":
-    #     line_name='sigmoid'
-    #     color = 'green'
-    # elif weight_activation == "ReLU":
-    #     line_name = 'ReLU'
-    #     color = 'orange'
+    # if values[0] == "ReLU-batch_ac_shared_gc":
+    #     line_name='shared'
+    #     color = 'orangered'
+    # elif values[0] == "ReLU-weighted_batch_ac":
+    #     line_name = 'non-shared'
+    #     color = 'dodgerblue'
     # else:
     #     line_name = 'tanh'
-    #     color='blue'
+    #     color='blueviolet'
+
+    if values[0] == 'batch_ac_shared_gc' and values[1] == True:
+        continue
 
     for seed in seeds:
         name = [str(k) for k in values]
         name.append(str(seed))
-        name = '-'.join(name) +'-err-ratios'
+        name = '-'.join(name)
         rets = data.loc[name].to_numpy()
         rets = np.squeeze(rets)
         # for i in range(rets.shape[0]):
@@ -56,7 +51,8 @@ for values in list(itertools.product(name)):
 
 # define y_axis, x_axis
 plt.xlabel("steps")
-plt.ylabel("undiscounted returns")
+plt.ylabel("Ratio between biases")
+plt.title('Ratio between our approximation bias and the wrong state distribution bias')
 # set legend
 plt.legend()
 plt.show()
