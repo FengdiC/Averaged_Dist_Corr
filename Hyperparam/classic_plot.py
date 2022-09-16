@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/progressclassic-control-weighted-batch-ac.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/progressAcrobot-weighted-batch-ac-repeat.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:150]
