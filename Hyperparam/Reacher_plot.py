@@ -26,7 +26,7 @@ seeds = range(5)
 steps = list(data)
 plt.figure()
 for values in list(itertools.product(name)):
-    results = []
+    results = {'errs':[],'err-ratios':[],'errs-buffer':[],'rets':[]}
     if values[0] == "ReLU-batch_ac_shared_gc":
         line_name='shared'
         color = 'orangered'
@@ -40,26 +40,59 @@ for values in list(itertools.product(name)):
     for seed in seeds:
         name = [str(k) for k in values]
         name.append(str(seed))
-        name = '-'.join(name) +'-err-ratios'
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
+        for key in results.keys():
+            hyper_name = '-'.join(name) +'-'+key
+            rets = data.loc[hyper_name].to_numpy()
+            rets = np.squeeze(rets)
+            # for i in range(rets.shape[0]):
+            #     rets[i] = (1-gamma**rets[i])/(1-gamma)
+            results[key].append(rets)
 
-    results = np.array(results)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0)
-    plt.plot(steps, mean, color=color, label=line_name)
+    plt.subplot(221)
+    M = np.array(results['err-ratios'])
+    mean = np.mean(M, axis=0)
+    std = np.std(M,axis=0)
+    # plt.plot(steps, mean, color=color, label=line_name)
     # plt.plot(steps,mean, label=name)
-    # plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
+    plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
+    # define y_axis, x_axis
+    plt.xlabel("steps")
+    plt.ylabel("Ratio between biases")
+    plt.title('Ratio between our approximation bias and the wrong state distribution bias')
+    plt.subplot(222)
+    M = np.array(results['errs'])
+    mean = np.mean(M, axis=0)
+    std = np.std(M, axis=0)
+    # plt.plot(steps, mean, color=color, label=line_name)
+    # plt.plot(steps,mean, label=name)
+    plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
+    # define y_axis, x_axis
+    plt.xlabel("steps")
+    plt.ylabel("Averaged Errors")
+    plt.title('Errors between our approximation and the true correction averaged by the stationary distribuion')
+    plt.subplot(223)
+    M = np.array(results['errs-buffer'])
+    mean = np.mean(M, axis=0)
+    std = np.std(M, axis=0)
+    # plt.plot(steps, mean, color=color, label=line_name)
+    # plt.plot(steps,mean, label=name)
+    plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
+    # define y_axis, x_axis
+    plt.xlabel("steps")
+    plt.ylabel("Averaged Errors")
+    plt.title('Errors between our approximation and the true correction averaged over the buffer')
+    plt.subplot(224)
+    M = np.array(results['rets'])
+    mean = np.mean(M, axis=0)
+    std = np.std(M, axis=0)
+    # plt.plot(steps, mean, color=color, label=line_name)
+    # plt.plot(steps,mean, label=name)
+    plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
+    # define y_axis, x_axis
+    plt.xlabel("steps")
+    plt.ylabel("Undiscounted Returns")
+    plt.title('Returns')
 
-# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
-
-# define y_axis, x_axis
-plt.xlabel("steps")
-plt.ylabel("Ratio between biases")
-plt.title('Ratio between our approximation bias and the wrong state distribution bias')
 # set legend
 plt.legend()
 plt.show()

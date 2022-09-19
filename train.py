@@ -3,9 +3,8 @@ import gym
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from Components.utils import argsparser
 from config import agents_dict
+from Components.utils import argsparser
 from Envs.gym_repeat import RepeatEnvWrapper
 
 

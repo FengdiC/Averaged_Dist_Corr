@@ -7,8 +7,8 @@ from torch import nn
 from Components.utils import A
 from Components.buffer import Buffer
 from Networks.weight import AvgDiscount, AvgDiscount_sigmoid, AvgDiscount_ReLU, AvgDiscount_tanh
-from Networks.actor_critic import MLPCategoricalActor, NNCategoricalActor, MLPGaussianActor
-from Networks.actor_critic import NNGammaCritic, NNGaussianActor
+from Networks.actor_critic import MLPCategoricalActor, MLPGaussianActor
+from Networks.actor_critic import NNGammaCritic, NNGaussianActor, NNCategoricalActor
 
 class WeightedBatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
