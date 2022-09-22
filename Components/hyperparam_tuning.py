@@ -23,7 +23,7 @@ args.buffer=64
 args.batch_size = 64
 args.lr = 0.0003
 args.scale_weight = 1.0
-args.LAMBDA_2=1.0
+args.LAMBDA_2=10.0
 args.lr_weight= 0.003
 args.gamma = 0.99
 
