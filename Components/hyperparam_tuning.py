@@ -13,8 +13,8 @@ from train import train
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent':['batch_ac_shared_gc'], 'env':['Acrobot-v1','CartPole-v1','MountainCar-v0',
-                                                'MountainCarContinuous-v0','Pendulum-v1']}
+param = {'agent':['batch_ac_shared_gc'], 'naive':[False],
+         'env':['Acrobot-v1','CartPole-v1','MountainCar-v0', 'MountainCarContinuous-v0','Pendulum-v1']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
