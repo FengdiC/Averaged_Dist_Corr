@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/progressAcrobot-weighted-batch-ac-repeat.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/progressclassic-control-weighted-batch-ac.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:150]
@@ -17,18 +17,18 @@ steps = list(data)
 plt.figure()
 for values in list(itertools.product(param['agent'],param['naive'],param['env'])):
     results = []
-    # if values[0] == "ReLU-batch_ac_shared_gc":
-    #     line_name='shared'
-    #     color = 'orangered'
-    # elif values[0] == "ReLU-weighted_batch_ac":
-    #     line_name = 'non-shared'
-    #     color = 'dodgerblue'
-    # else:
-    #     line_name = 'tanh'
-    #     color='blueviolet'
 
     if values[0] == 'batch_ac_shared_gc' and values[1] == True:
         continue
+    elif values[0] == 'batch_ac_shared_gc':
+        line_name = 'corrected'
+        color = 'orangered'
+    elif values[1] == True:
+        line_name = 'existing'
+        color = 'dodgerblue'
+    else:
+        line_name = 'biased'
+        color = 'blueviolet'
 
     for seed in seeds:
         name = [str(k) for k in values]
@@ -44,15 +44,16 @@ for values in list(itertools.product(param['agent'],param['naive'],param['env'])
     mean = np.mean(results, axis=0)
     std = np.std(results,axis=0)
     # plt.plot(steps, mean, color=color, label=line_name)
-    plt.plot(steps,mean, label=name)
-    # plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
+    # plt.plot(steps,mean, label=name)
+    # plt.fill_between(steps, mean+std, mean-std,color=color, label=line_name,alpha=0.2,linewidth=0.9)
+    plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
 
 # plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
 
 # define y_axis, x_axis
 plt.xlabel("steps")
-plt.ylabel("Ratio between biases")
-plt.title('Ratio between our approximation bias and the wrong state distribution bias')
+plt.ylabel("Undiscounted Returns")
+# plt.title('Ratio between our approximation bias and the wrong state distribution bias')
 # set legend
 plt.legend()
 plt.show()

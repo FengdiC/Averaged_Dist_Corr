@@ -13,8 +13,8 @@ from train import train
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent': ['batch_ac_shared_gc', 'batch_ac'], 'naive': [True, False],
-         'env': ['CartPole-v1']}
+param = {'agent': ['batch_ac'], 'naive': [True, False],
+         'env': ['MountainCarContinuous-v0','Pendulum-v1']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
@@ -22,12 +22,12 @@ args = utils.argsparser()
 args.buffer = 64
 args.batch_size = 64
 args.lr = 0.0003
-args.scale_weight = 1.0
-args.LAMBDA_2 = 10.0
+args.scale_weight = 10.0
+args.LAMBDA_2 = 1.0
 args.lr_weight = 0.003
 args.gamma = 0.99
 
-logger.configure(args.log_dir, ['csv'], log_suffix='Acrobot-weighted-batch-ac-gym')
+logger.configure(args.log_dir, ['csv'], log_suffix='classic-control-baselines-continuous')
 
 for values in list(itertools.product(param['agent'], param['naive'], param['env'])):
     args.agent = values[0]
@@ -40,10 +40,6 @@ for values in list(itertools.product(param['agent'], param['naive'], param['env'
     #     continue
     if args.agent == 'batch_ac_shared_gc' and args.naive == True:
         continue
-    if args.agent == 'batch_ac_shared_gc':
-        args.LAMBDA_2 = 1.0
-        args.buffer = 128
-        args.batch_size = 128
     # if args.scale_weight>1 and args.weight_activation!='ReLU':
     #     continue
 
