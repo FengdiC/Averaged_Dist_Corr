@@ -1,5 +1,4 @@
 import numpy as np
-from Components import utils, logger
 import itertools
 import os
 import sys
@@ -8,6 +7,7 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
+from Components import utils, logger
 from train import train
 
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
