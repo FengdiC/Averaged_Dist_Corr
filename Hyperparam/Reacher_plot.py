@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('../logs/architecture/Reacher/Reacher_shared.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/progress-Reacher_repeat_shared_network.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:20]
@@ -14,10 +14,10 @@ name = ['ReLU-5-0.001-weighted_batch_ac','sigmoid-5-0.001-weighted_batch_ac','ta
         'tanh-5-0.001-batch_ac_shared_gc']
 
 name = ['ReLU-weighted_batch_ac', 'ReLU-batch_ac_shared_gc']
-name=[]
-for agent in ['batch_ac_shared_gc']:
-    for activation in ['ReLU','sigmoid','tanh']:
-        name.append(activation+'-'+agent)
+
+# for agent in ['batch_ac_shared_gc']:
+#     for activation in ['ReLU','sigmoid','tanh']:
+#         name.append(activation+'-'+agent)
 
 # agent = ['batch_ac_shared_gc']
 # activation = ['ReLU','sigmoid','tanh']

@@ -1,3 +1,5 @@
+import random
+
 import torch
 import numpy as np
 from Components.utils import argsparser
@@ -16,9 +18,10 @@ def train(args,stepsize=0.4):
     seed = args.seed
 
     # Create Env
-    env = DotReacherRepeat(stepsize=stepsize)
     torch.manual_seed(seed)
     np.random.seed(seed)
+    random.seed((seed))
+    env = DotReacherRepeat(stepsize=stepsize)
     o_dim = env.observation_space.shape[0]
     if args.continuous:
         a_dim= env.action_space.shape[0]
@@ -219,7 +222,7 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     return approx_bias/miss_bias,err_in_buffer
 
 args = argsparser()
-logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_repeat_final')
+logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_repeat_shared_network')
 ratio = []
 err = []
 err_buffer = []
@@ -228,10 +231,10 @@ args.epoch_weight = 1
 args.lr = 0.001
 args.lr_weight= 0.001
 args.scale_weight = 1
-args.buffer_size = 5
+args.buffer_size = 45
 
-agent = ['weighted_batch_ac']
-activation = ['sigmoid','ReLU','tanh']
+agent = ['weighted_batch_ac','batch_ac_shared_gc']
+activation = ['ReLU']
 checkpoint = 1000
 
 for values in list(itertools.product(activation,agent)):
@@ -244,6 +247,7 @@ for values in list(itertools.product(activation,agent)):
 
     seeds = range(5)
     for seed in seeds:
+        args.seed = seed
         avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.2)
         ratio.append(np.mean(avgerr_ratio))
         ret.append(np.mean(avgrets))
