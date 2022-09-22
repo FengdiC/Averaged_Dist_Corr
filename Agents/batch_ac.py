@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
-from Networks.actor_critic import MLPCategoricalActor
+from Networks.actor_critic import MLPCategoricalActor, MLPGaussianActor
 import gym
 from Components.utils import meanstdnormalizaer, A
 from Components.buffer import Buffer
@@ -9,10 +9,14 @@ import matplotlib.pyplot as plt
 
 class BatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False,continuous=False):
         super(BatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,args=args,device=device,shared=shared)
-        self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
+                                              hidden=hidden,args=args,device=device,shared=shared,
+                                              continuous=continuous)
+        if continuous:
+            self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared, device)
+        else:
+            self.network = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
         self.network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)
@@ -42,7 +46,10 @@ class BatchActorCritic(A):
         # Create the buffer
         self.buffer_size=self.args.buffer
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
+        if self.continuous:
+            self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, self.n_actions, self.args.buffer)
+        else:
+            self.buffer = Buffer(self.args.gamma,self.args.lam,o_dim, 0, self.args.buffer)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op).to(self.device))

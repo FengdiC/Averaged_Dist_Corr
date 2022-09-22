@@ -3,10 +3,9 @@ import gym
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from Components.utils import argsparser
 from config import agents_dict
-from Components.env import TaskWrapper
+from Components.utils import argsparser
+from Envs.gym_repeat import RepeatEnvWrapper
 
 
 def train(args):
@@ -16,6 +15,7 @@ def train(args):
 
     # Create Env
     env = gym.make(args.env)
+    # env = RepeatEnvWrapper(args.env)
     env.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)

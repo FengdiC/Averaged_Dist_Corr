@@ -7,15 +7,19 @@ from torch import nn
 from Components.utils import A
 from Components.buffer import Buffer
 from Networks.weight import AvgDiscount, AvgDiscount_sigmoid, AvgDiscount_ReLU, AvgDiscount_tanh
-from Networks.actor_critic import MLPCategoricalActor, NNCategoricalActor
-from Networks.actor_critic import NNGammaCritic, NNGaussianActor
+from Networks.actor_critic import MLPCategoricalActor, MLPGaussianActor
+from Networks.actor_critic import NNGammaCritic, NNGaussianActor, NNCategoricalActor
 
 class WeightedBatchActorCritic(A):
     # the current code works for shared networks with categorical actions only
-    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False):
+    def __init__(self,lr,gamma,BS,o_dim,n_actions,hidden,args,device=None,shared=False,continuous=False):
         super(WeightedBatchActorCritic,self).__init__(lr=lr,gamma=gamma,BS=BS,o_dim=o_dim,n_actions=n_actions,
-                                              hidden=hidden,args=args,device=device,shared=shared)
-        self.network = MLPCategoricalActor(o_dim,n_actions,hidden,shared)
+                                              hidden=hidden,args=args,device=device,shared=shared,
+                                                      continuous=continuous)
+        if continuous:
+            self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared, device)
+        else:
+            self.network = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
         if args.weight_activation == 'sigmoid':
             self.weight_network = AvgDiscount_sigmoid(o_dim,hidden,args.scale_weight)
         elif args.weight_activation == 'ReLU':
@@ -62,7 +66,10 @@ class WeightedBatchActorCritic(A):
         # Create the buffer
         self.buffer_size=self.args.buffer
         o_dim = env.observation_space.shape[0]
-        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, 0, self.args.buffer)
+        if self.continuous:
+            self.buffer = Buffer(self.args.gamma, self.args.lam, o_dim, self.n_actions, self.args.buffer)
+        else:
+            self.buffer = Buffer(self.args.gamma, self.args.lam, o_dim, 0, self.args.buffer)
 
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op).to(self.device))
@@ -110,9 +117,9 @@ class SharedWeightedCriticBatchAC(A):
         self.continuous = continuous
 
         if continuous:
-            self.network = NNGaussianActor(o_dim, n_actions, hidden,shared,device)
+            self.network = NNGaussianActor(o_dim, n_actions, hidden,device)
         else:
-            self.network = NNCategoricalActor(o_dim, n_actions, hidden, shared)
+            self.network = NNCategoricalActor(o_dim, n_actions, hidden,shared)
 
         self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
         self.network.to(device)
