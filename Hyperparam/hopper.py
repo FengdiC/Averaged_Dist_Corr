@@ -11,8 +11,8 @@ from Components import utils, logger
 from train import train
 import mujoco
 
-param = {'lr': [0.03,0.0006,0.0003,0.0001],'lr_weight':[0.0003],'closs':[1,5,10],
-         'scale_weight': [40,60,100],'buffer':[2048]}
+param = {'lr': [0.0006,0.0003,0.0001],'lr_weight':[0.0003],'closs':[1,10],
+         'scale_weight': [40,60],'buffer':[1024,2048]}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input

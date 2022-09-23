@@ -237,19 +237,21 @@ def tune():
     args.epoch_weight = 10
     args.LAMBDA_2=1.0
 
-    agent = ['weighted_shared_batch_ac','batch_ac_shared_gc']
+    agent = ['weighted_shared_batch']
     activation = ['ReLU']
-    lr = [0.0006,0.0003,0.0001]
-    scale_weight = [1,5,10]
+    lr = [0.05,0.01,0.005,0.001,0.0005]
+    scale_weight = [10]
+    buffer = [5]
     checkpoint = 1000
 
-    for values in list(itertools.product(activation,agent,lr,scale_weight)):
+    for values in list(itertools.product(activation,agent,lr,scale_weight,buffer)):
         print(values)
         args.agent = values[1]
         args.weight_activation = values[0]
         args.lr = values[2]
-        args.lr_weight = values[2]*10
+        args.lr_weight = values[2]
         args.scale_weight = values[3]
+        args.buffer = values[4]
         if args.weight_activation == 'ReLU':
             args.scale_weight = 10.0
 
