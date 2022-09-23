@@ -44,7 +44,7 @@ class AvgDiscount_ReLU(nn.Module):
         obs = obs.float()
         body = self.body(obs)
         weight = self.weight(body)
-        return torch.squeeze(weight)/self.scale
+        return torch.squeeze(weight)
 
 class AvgDiscount_tanh(nn.Module):
     def __init__(self,o_dim,hidden,scale=1.0):

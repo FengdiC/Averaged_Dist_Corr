@@ -126,10 +126,11 @@ def train(args,stepsize=0.4):
             # plt.pause(0.001)
     return avgrets,avgerr,avgerr_buffer,avgerr_ratio
 
-def plot_correction(env,agent,gamma,device):
+def plot_correction(env,agent,gamma,device,policy=np.array([None,None])):
     # get the policy
     states = env.get_states()
-    policy = agent.network.get_policy(torch.from_numpy(states).to(device))
+    if (policy==None).all():
+        policy = agent.network.get_policy(torch.from_numpy(states).to(device))
     # policy = np.ones((25,8))/8.0
 
     # get transition matrix P
@@ -179,12 +180,12 @@ def plot_correction(env,agent,gamma,device):
 def plot_est_corr(env,agent,device,correction,args):
     # get the weights
     states = env.get_states()
-    if args.agent == 'batch_ac_shared_gc':
-        _,weights = agent.weight_critic.forward(torch.from_numpy(states).to(device))
-        weights = weights.detach().cpu().numpy() * agent.buffer_size * (1 - agent.gamma)
-    else:
+    if args.agent == 'weighted_batch_ac':
         weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy() * \
-              agent.buffer_size*(1-agent.gamma)
+                  agent.buffer_size * (1 - agent.gamma)
+    else:
+        _, weights = agent.weight_critic.forward(torch.from_numpy(states).to(device))
+        weights = weights.detach().cpu().numpy() * agent.buffer_size * (1 - agent.gamma)
 
     # # plot heatmap
     # data = pd.DataFrame(data={'x': states[:, 0], 'y': states[:, 1], 'z': np.squeeze(weights)})
@@ -221,67 +222,164 @@ def bias_compare(env,all_frames,d_pi,correction,est):
     # print(indices.shape[0],approx_bias, miss_bias)
     return approx_bias/miss_bias,err_in_buffer
 
-args = argsparser()
-logger.configure(args.log_dir,['csv'], log_suffix='-Reacher_repeat_shared_network')
-ratio = []
-err = []
-err_buffer = []
-ret = []
-args.epoch_weight = 1
-args.lr = 0.001
-args.lr_weight= 0.001
-args.scale_weight = 1
-args.buffer_size = 45
+def tune():
+    args = argsparser()
+    logger.configure(args.log_dir,['csv'], log_suffix='-random')
+    ratio = []
+    err = []
+    err_buffer = []
+    ret = []
+    args.epoch_weight = 1
+    args.lr = 0.001
+    args.lr_weight= 0.001
+    args.scale_weight = 1
+    args.buffer_size = 5
+    args.epoch_weight = 10
+    args.LAMBDA_2=1.0
 
-agent = ['weighted_batch_ac','batch_ac_shared_gc']
-activation = ['ReLU']
-checkpoint = 1000
+    agent = ['weighted_shared_batch_ac','batch_ac_shared_gc']
+    activation = ['ReLU']
+    lr = [0.0006,0.0003,0.0001]
+    scale_weight = [1,5,10]
+    checkpoint = 1000
 
-for values in list(itertools.product(activation,agent)):
-    print(values)
+    for values in list(itertools.product(activation,agent,lr,scale_weight)):
+        print(values)
+        args.agent = values[1]
+        args.weight_activation = values[0]
+        args.lr = values[2]
+        args.lr_weight = values[2]*10
+        args.scale_weight = values[3]
+        if args.weight_activation == 'ReLU':
+            args.scale_weight = 10.0
 
-    args.agent = values[1]
-    args.weight_activation = values[0]
-    if args.weight_activation == 'ReLU':
-        args.scale_weight = 10.0
+        seeds = range(5)
+        for seed in seeds:
+            args.seed = seed
+            avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.2)
+            ratio.append(np.mean(avgerr_ratio))
+            ret.append(np.mean(avgrets))
+            err.append(np.mean(avgerr))
+            err_buffer.append(np.mean(avgerr_buffer))
 
-    seeds = range(5)
-    for seed in seeds:
-        args.seed = seed
-        avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.2)
-        ratio.append(np.mean(avgerr_ratio))
-        ret.append(np.mean(avgrets))
-        err.append(np.mean(avgerr))
-        err_buffer.append(np.mean(avgerr_buffer))
+            name = [str(k) for k in values]
+            name.append(str(seed))
+            logger.logkv("hyperparam", '-'.join(name)+'-rets')
+            for n in range(len(avgrets)):
+                logger.logkv(str((n + 1) * checkpoint), avgrets[n])
+            logger.dumpkvs()
 
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        logger.logkv("hyperparam", '-'.join(name)+'-rets')
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgrets[n])
-        logger.dumpkvs()
+            logger.logkv("hyperparam", '-'.join(name)+'-errs')
+            for n in range(len(avgrets)):
+                logger.logkv(str((n + 1) * checkpoint), avgerr[n])
+            logger.dumpkvs()
 
-        logger.logkv("hyperparam", '-'.join(name)+'-errs')
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgerr[n])
-        logger.dumpkvs()
+            logger.logkv("hyperparam", '-'.join(name)+'-err-ratios')
+            for n in range(len(avgrets)):
+                logger.logkv(str((n + 1) * checkpoint), avgerr_ratio[n])
+            logger.dumpkvs()
 
-        logger.logkv("hyperparam", '-'.join(name)+'-err-ratios')
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgerr_ratio[n])
-        logger.dumpkvs()
+            logger.logkv("hyperparam", '-'.join(name)+'-errs-buffer')
+            for n in range(len(avgrets)):
+                logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
+            logger.dumpkvs()
 
-        logger.logkv("hyperparam", '-'.join(name)+'-errs-buffer')
-        for n in range(len(avgrets)):
-            logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
-        logger.dumpkvs()
-# plt.figure()
-# plt.subplot(211)
-# plt.plot(buffer_size,err_buffer)
-# plt.xlabel("buffer size")
-# plt.ylabel("averaged bias comparison ratio")
-# plt.subplot(212)
-# plt.plot(buffer_size,err)
-# plt.xlabel("buffer size")
-# plt.ylabel("averaged returns")
-# plt.show()
+def fixed_policy_check(stepsize = 0.2):
+    # env._obs is an numpy array, while env._states is a list. But they both represent all states.
+    args = argsparser()
+    seed = args.seed
+    args.buffer=5
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed((seed))
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    env = DotReacherRepeat(stepsize=stepsize)
+    policy = np.zeros((len(env._states),8))
+    for i in range(len(env._states)):
+        obs = env._obs[i]
+        action = np.clip(-obs, np.array([-stepsize,-stepsize]), np.array([stepsize,stepsize]))
+        policy[i] = (env._aval[:, 0] == action[0]) & (env._aval[:, 1] == action[1])
+
+    network = agents_dict[args.agent]
+    o_dim = env.observation_space.shape[0]
+    a_dim = env.action_space.n
+    agent = network(0, 0, 5, o_dim, a_dim, 0, args, None)
+    agent.create_buffer(env)
+
+    errs = []
+    errs_buffer = []
+    err_ratios = []
+    avgerr = []
+    avgerr_buffer = []
+    avgerr_ratio = []
+    op = env.reset()
+
+    num_steps = 20000
+    checkpoint = 1000
+    num_episode = 0
+    count = 0
+    time = 0
+    for steps in range(num_steps):
+        # does torch need expand_dims
+        action = np.clip(-np.round_(op, 2), np.array([-stepsize,-stepsize]), np.array([stepsize,stepsize])).astype(np.float32)
+        if (action==np.array([0,0])).all():
+            action = np.array([-0.2,-0.2],np.float32)
+        a = (env._aval == action).all(axis=1).nonzero()[0]+1
+        obs, r, done, infos = env.step(a)
+        a, lprob = agent.network.act(torch.from_numpy(op).to(device))
+        agent.store(op, r, done, a, lprob, time)
+
+        # Observe
+        op = obs
+        time += 1
+        count += 1
+
+        # when we compare biases from the missing discount factor and our correction approximation, should it be
+        # on all states or just states shown up in the last buffer. But anyhow, these states should be weighted
+        # according to the stationary distribution.
+        if count == agent.buffer_size:
+            all_frames = agent.buffer.all_frames()
+            _, count = agent.learn(count,obs)
+
+        if count == 0:
+            correction, d_pi = plot_correction(env, agent, args.gamma, device, policy)
+            # print("check", np.sum(correction*d_pi))
+            est = plot_est_corr(env, agent, device, correction, args)
+            err = np.matmul(d_pi, np.abs(correction - est))
+            print(est)
+            print('done')
+            err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
+            errs.append(err)
+            errs_buffer.append(err_buffer)
+            err_ratios.append(err_ratio)
+
+        if done:
+            num_episode += 1
+            time = 0
+            op = env.reset()
+
+        if (steps + 1) % checkpoint == 0:
+            # plt.rcParams["figure.figsize"]
+            # gymdisplay(env,MAIN)
+
+            # print(np.matmul(d_pi,correction)) #should be close to 1
+            avgerr.append(np.mean(errs))
+            avgerr_ratio.append(np.mean(err_ratios))
+            avgerr_buffer.append(np.mean(errs_buffer))
+            rets = []
+            losses = []
+            errs = []
+            err_ratios = []
+            errs_buffer = []
+            plt.clf()
+            plt.subplot(311)
+            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr)
+            plt.subplot(312)
+            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr_ratio)
+            plt.subplot(313)
+            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr_buffer)
+            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            plt.pause(0.001)
+
+tune()

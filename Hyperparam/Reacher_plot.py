@@ -9,11 +9,18 @@ data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:20]
 
 
-name = ['ReLU-5-0.001-weighted_batch_ac','sigmoid-5-0.001-weighted_batch_ac','tanh-5-0.001-weighted_batch_ac',
-        'ReLU-5-0.0001-batch_ac_shared_gc','sigmoid-5-0.0001-batch_ac_shared_gc',
-        'tanh-5-0.001-batch_ac_shared_gc']
+agent = ['weighted_batch_ac','batch_ac_shared_gc']
+activation = ['ReLU']
+lr = [0.05,0.01,0.005,0.001]
+lr_weight = [0.05,0.01,0.005,0.001]
+buffer = [5,25,45]
+checkpoint = 1000
 
-name = ['ReLU-weighted_batch_ac', 'ReLU-batch_ac_shared_gc']
+# name = ['ReLU-5-0.001-weighted_batch_ac','sigmoid-5-0.001-weighted_batch_ac','tanh-5-0.001-weighted_batch_ac',
+#         'ReLU-5-0.0001-batch_ac_shared_gc','sigmoid-5-0.0001-batch_ac_shared_gc',
+#         'tanh-5-0.001-batch_ac_shared_gc']
+#
+# name = ['ReLU-weighted_batch_ac', 'ReLU-batch_ac_shared_gc']
 
 # for agent in ['batch_ac_shared_gc']:
 #     for activation in ['ReLU','sigmoid','tanh']:
@@ -25,17 +32,17 @@ name = ['ReLU-weighted_batch_ac', 'ReLU-batch_ac_shared_gc']
 seeds = range(5)
 steps = list(data)
 plt.figure()
-for values in list(itertools.product(name)):
+for values in list(itertools.product(activation,agent,lr,lr_weight)):
     results = {'errs':[],'err-ratios':[],'errs-buffer':[],'rets':[]}
-    if values[0] == "ReLU-batch_ac_shared_gc":
-        line_name='shared'
-        color = 'orangered'
-    elif values[0] == "ReLU-weighted_batch_ac":
-        line_name = 'non-shared'
-        color = 'dodgerblue'
-    else:
-        line_name = 'tanh'
-        color='blueviolet'
+    # if values[0] == "ReLU-batch_ac_shared_gc":
+    #     line_name='shared'
+    #     color = 'orangered'
+    # elif values[0] == "ReLU-weighted_batch_ac":
+    #     line_name = 'non-shared'
+    #     color = 'dodgerblue'
+    # else:
+    #     line_name = 'tanh'
+    #     color='blueviolet'
 
     for seed in seeds:
         name = [str(k) for k in values]
@@ -54,7 +61,8 @@ for values in list(itertools.product(name)):
     std = np.std(M,axis=0)
     # plt.plot(steps, mean, color=color, label=line_name)
     # plt.plot(steps,mean, label=name)
-    plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
+    # plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
+    plt.errorbar(steps, mean, std,  label=name, alpha=0.5, elinewidth=0.9)
     # define y_axis, x_axis
     plt.xlabel("steps")
     plt.ylabel("Ratio between biases")

@@ -13,7 +13,7 @@ def argsparser():
     parser = argparse.ArgumentParser("Tensorflow Implementation of DQN")
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--agent', help='the trainer used', type=str, default='batch_ac')
-    parser.add_argument('--activation', help='the trainer used', type=str, default='ReLU')
+    parser.add_argument('--weight_activation', help='the trainer used', type=str, default='ReLU')
     parser.add_argument('--env', help='Environment name', type=str, default='CartPole-v1')
     parser.add_argument('--log_dir', help='log direction', type=str, default='./logs/')
 

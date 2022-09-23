@@ -130,7 +130,7 @@ class NNGammaCritic(nn.Module):
         obs = obs.float()
         body = self.body(obs)
         value = self.critic(body)
-        weight = self.weight(body)/self.scale
+        weight = self.weight(body)
         # weight = torch.sigmoid(weight)
         # weight = (torch.tanh(weight) +1)/2.0
         return torch.squeeze(value), torch.squeeze(weight)
