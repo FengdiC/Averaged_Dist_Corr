@@ -3,9 +3,8 @@ import gym
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from Components.utils import argsparser
 from config import agents_dict
+from Components.utils import argsparser
 from Envs.gym_repeat import RepeatEnvWrapper
 
 
@@ -45,7 +44,7 @@ def train(args):
     avglos = []
     op = env.reset()
 
-    num_steps = 1500000
+    num_steps = 1000000
     checkpoint = 10000
     num_episode = 0
     count = 0

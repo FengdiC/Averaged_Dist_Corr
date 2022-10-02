@@ -4,7 +4,7 @@ import gym
 import numpy as np
 
 class RepeatEnvWrapper(Env):
-    def __init__(self, name='Pendulum-v1',timeout=500):
+    def __init__(self, name='Acrobot-v1',timeout=180):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._timeout = timeout
@@ -45,10 +45,11 @@ class RepeatEnvWrapper(Env):
             self.next_step_restart = done
             self.obs = obs
             # Reward
-            reward = 0
+            reward = r
         # Reach goal
         if done:
-            reward = 1
+            reward = 100
+            # print(self.steps)
 
         # Check termiation
         done = self.steps == self._timeout

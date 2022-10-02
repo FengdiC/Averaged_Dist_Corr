@@ -123,16 +123,16 @@ class NNGammaCritic(nn.Module):
         self.body = nn.Sequential(nn.Linear(o_dim, hidden), nn.ReLU(),
                                   nn.Linear(hidden,hidden), nn.ReLU())
         self.critic = nn.Linear(hidden, 1)
-        self.weight = nn.Sequential(nn.Linear(hidden,1))
+        self.weight = nn.Sequential(nn.Linear(hidden,1),nn.ReLU())
         self.scale = scale
         
     def forward(self,obs):
         obs = obs.float()
         body = self.body(obs)
         value = self.critic(body)
-        weight = self.weight(body)/self.scale
+        weight = self.weight(body)
         # weight = torch.sigmoid(weight)
-        weight = (torch.tanh(weight) +1)/2.0
+        # weight = (torch.tanh(weight) +1)/2.0
         return torch.squeeze(value), torch.squeeze(weight)
 
 
