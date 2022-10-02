@@ -14,8 +14,8 @@ def train(args):
     print(device)
 
     # Create Env
-    env = gym.make(args.env)
-    # env = RepeatEnvWrapper(args.env)
+    # env = gym.make(args.env)
+    env = RepeatEnvWrapper(args.env)
     env.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
