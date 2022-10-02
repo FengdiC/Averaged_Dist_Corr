@@ -181,11 +181,10 @@ def plot_est_corr(env,agent,device,correction,args):
     # get the weights
     states = env.get_states()
     if args.agent == 'weighted_batch_ac':
-        weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy() * \
-                  agent.buffer_size * (1 - agent.gamma)
+        weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy()
     else:
         _, weights = agent.weight_critic.forward(torch.from_numpy(states).to(device))
-        weights = weights.detach().cpu().numpy() * agent.buffer_size * (1 - agent.gamma)
+        weights = weights.detach().cpu().numpy()
 
     # # plot heatmap
     # data = pd.DataFrame(data={'x': states[:, 0], 'y': states[:, 1], 'z': np.squeeze(weights)})
@@ -224,37 +223,26 @@ def bias_compare(env,all_frames,d_pi,correction,est):
 
 def tune():
     args = argsparser()
-    logger.configure(args.log_dir,['csv'], log_suffix='-random')
+    logger.configure(args.log_dir,['csv'], log_suffix='-sigmoid')
     ratio = []
     err = []
     err_buffer = []
     ret = []
+    args.agent = 'batch_ac_shared_gc'
     args.epoch_weight = 1
-    args.lr = 0.001
+    args.lr = 0.0005
     args.lr_weight= 0.001
     args.scale_weight = 1
-    args.buffer_size = 5
-    args.epoch_weight = 10
+    args.buffer = 5
+    args.batch_size= 5
     args.LAMBDA_2=1.0
 
-    agent = ['weighted_shared_batch']
-    activation = ['ReLU']
-    lr = [0.05,0.01,0.005,0.001,0.0005]
-    scale_weight = [10]
-    buffer = [5]
+    agent = ['batch_ac_shared_gc']
+    activation = ['sigmoid']
     checkpoint = 1000
 
-    for values in list(itertools.product(activation,agent,lr,scale_weight,buffer)):
+    for values in list(itertools.product(agent,activation)):
         print(values)
-        args.agent = values[1]
-        args.weight_activation = values[0]
-        args.lr = values[2]
-        args.lr_weight = values[2]
-        args.scale_weight = values[3]
-        args.buffer = values[4]
-        if args.weight_activation == 'ReLU':
-            args.scale_weight = 10.0
-
         seeds = range(5)
         for seed in seeds:
             args.seed = seed
@@ -291,6 +279,11 @@ def fixed_policy_check(stepsize = 0.2):
     args = argsparser()
     seed = args.seed
     args.buffer=5
+    args.batch_size=5
+    args.lr = 0.005
+    args.lr_weight=0.05
+    args.scale_weight=10.0
+    args.LAMBDA_2=1
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed((seed))
@@ -305,7 +298,7 @@ def fixed_policy_check(stepsize = 0.2):
     network = agents_dict[args.agent]
     o_dim = env.observation_space.shape[0]
     a_dim = env.action_space.n
-    agent = network(0, 0, 5, o_dim, a_dim, 0, args, None)
+    agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden, args, device)
     agent.create_buffer(env)
 
     errs = []
@@ -348,8 +341,6 @@ def fixed_policy_check(stepsize = 0.2):
             # print("check", np.sum(correction*d_pi))
             est = plot_est_corr(env, agent, device, correction, args)
             err = np.matmul(d_pi, np.abs(correction - est))
-            print(est)
-            print('done')
             err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
             errs.append(err)
             errs_buffer.append(err_buffer)

@@ -4,7 +4,7 @@ import gym
 import numpy as np
 
 class RepeatEnvWrapper(Env):
-    def __init__(self, name='Acrobot-v1',timeout=480):
+    def __init__(self, name='Acrobot-v1',timeout=180):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._timeout = timeout

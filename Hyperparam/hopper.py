@@ -11,29 +11,34 @@ from Components import utils, logger
 from train import train
 import mujoco
 
-param = {'lr': [0.0006,0.0003,0.0001],'lr_weight':[0.0003],'closs':[1,10],
-         'scale_weight': [40,60],'buffer':[1024,2048]}
+param = {'lr_weight': [0.006,0.003,0.0003],'closs':[1,10],'scale_weight': [20,40,100],'buffer':[2048],
+         'agent':['ppo_shared_gc']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
 
-args.agent='ppo_shared_gc'
-args.env='Hopper-v3'
+args.env='Hopper-v4'
 args.continuous=True
 args.buffer = 2048
 args.batch_size = 64
 args.lr = 0.0003
 args.scale_weight = 1.0
-args.LAMBDA_2 = 1.0
+args.LAMBDA_2 = 10.0
 args.lr_weight = 0.003
 args.gamma = 0.99
+args.continuous=True
 
-logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-weighted-ppo-2')
+logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-weighted-ppo')
 
-for values in list(itertools.product(param['lr'], param['closs'], param['scale_weight'])):
-    args.lr = values[0]
+for values in list(itertools.product(param['lr_weight'], param['closs'], param['scale_weight'],param['buffer'],param['agent'])):
+    args.lr_weight = values[0]
     args.LAMBDA_2 = values[1]
     args.scale_weight = values[2]
+    args.buffer = values[3]
+    args.agent = values[4]
+
+    if args.agent == 'weighted_ppo' and args.LAMBDA_2!=10:
+        continue
     seeds = range(5)
     returns = []
 
