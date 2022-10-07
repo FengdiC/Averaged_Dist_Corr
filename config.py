@@ -9,4 +9,5 @@ agents_dict = {"batch_ac":batch_ac.BatchActorCritic,
                'ppo_shared_gc':weighted_ppo.SharedWeightedPPO,
                'weighted_shared_ppo':weighted_ppo.WeightSeparateUpdatePPO,
                'acktr': acktr.ACKTR,
+               'weighted_acktr': acktr.WeightedACKTR,
                }
