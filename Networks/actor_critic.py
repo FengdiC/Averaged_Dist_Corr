@@ -94,7 +94,7 @@ class NNGaussianActor(nn.Module):
         self.mu = nn.Linear(hidden, a_dim)
         self.std = torch.ones(a_dim, requires_grad=True).to(device)
 
-    def forward(self,obs,actions):
+    def forward(self, obs, actions):
         obs = obs.float()
         actions = actions.float()
         
