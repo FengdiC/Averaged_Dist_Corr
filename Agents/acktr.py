@@ -56,14 +56,16 @@ class ACKTR():
             if self.continuous:
                 action_log_probs, values, dist_entropy = self.actor_critic(torch.from_numpy(frames).to(self.device), 
                                                                            torch.from_numpy(actions).to(self.device))
+                _, last_val, _ = self.actor_critic(torch.from_numpy(obs).unsqueeze(0).to(self.device), torch.zeros(1, self.n_actions).to(self.device)) 
             else:
                 action_log_probs, values, dist_entropy = self.actor_critic(torch.from_numpy(frames).to(self.device),
                                                                            torch.from_numpy(actions).to(self.device))           
-            
+                _, last_val, _ = self.actor_critic(torch.from_numpy(obs).unsqueeze(0).to(self.device), torch.zeros(1, 1).to(self.device)) 
             ###
             value_preds = torch.zeros(self.BS + 1)
+            value_preds[-1] = last_val
             rets = torch.zeros(self.BS)
-            _, value_preds[-1], _ = self.actor_critic(torch.from_numpy(obs).unsqueeze(0).to(self.device), torch.zeros(1, 1).to(self.device))
+           
             gae = 0
             for step in reversed(range(rewards.size)):
                 delta = rewards[step] + (1 - dones[step]) * self.gamma * value_preds[step + 1] - value_preds[step]
