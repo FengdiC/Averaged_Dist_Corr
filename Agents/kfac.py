@@ -111,7 +111,9 @@ class KFACOptimizer(optim.Optimizer):
                  weight_decay=0,
                  fast_cnn=False,
                  Ts=1,
-                 Tf=10):
+                 Tf=10,
+                 max_grad_norm=1,
+                 ):
         defaults = dict()
 
         def split_bias(module):
@@ -151,6 +153,8 @@ class KFACOptimizer(optim.Optimizer):
 
         self.Ts = Ts
         self.Tf = Tf
+
+        self.max_grad_norm = max_grad_norm
 
         self.optim = optim.SGD(
             model.parameters(),
@@ -253,6 +257,8 @@ class KFACOptimizer(optim.Optimizer):
             v = updates[p]
             p.grad.data.copy_(v)
             p.grad.data.mul_(nu)
+        
+        _ = nn.utils.clip_grad_norm_(p, max_norm=self.max_grad_norm)
 
         self.optim.step()
         self.steps += 1

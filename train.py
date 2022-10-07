@@ -28,9 +28,12 @@ def train(args):
     # Set the agent
     network = agents_dict[args.agent]
     if args.continuous:
-        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,args,device,continuous=True)
+        agent = network(lr=args.lr, gamma=args.gamma, BS=args.batch_size, 
+                        o_dim=o_dim, n_actions=a_dim, hidden=args.hidden, args=args,
+                        device=device, continuous=True)
     else:
-        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,args,device)
+        agent = network(lr=args.lr, gamma=args.gamma, BS=args.batch_size,
+                        o_dim= o_dim, n_actions=a_dim, hidden=args.hidden, args=args, device=device)
 
     # Experiment block starts
     # Create the buffer
@@ -59,8 +62,8 @@ def train(args):
         op = obs
         time += 1
         count += 1
-
-        loss,count=agent.learn(count,obs)
+        
+        loss, count = agent.learn(count, obs)
         losses.append(loss)
 
         # End of Episode
@@ -96,5 +99,6 @@ def train(args):
             # plt.pause(0.001)
     return avgrets
 
-# args = argsparser()
-# train(args)
+if __name__ == "__main__":
+    args = argsparser()
+    train(args)
