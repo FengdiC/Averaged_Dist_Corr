@@ -34,6 +34,12 @@ def argsparser():
     parser.add_argument('--LAMBDA_2', type=float, help='Lambda 2 for mse', default=10)
     parser.add_argument('--naive', type=bool, help='IF add on naive gamma power correction', default=True)
     parser.add_argument('--continuous', type=bool, help='whether actions are continuous', default=False)
+    # ACKTR
+    parser.add_argument('--value_loss_coef', type=float, help='Value loss coefficient', default=0.25)
+    parser.add_argument('--entropy_coef', type=float, help='Entropy coefficient', default=0.01)
+    parser.add_argument('--value_fisher_coef', type=float, help='Value fisher coefficient', default=1.0)
+    parser.add_argument('--max_grad_norm', type=float, help='Maximum gradient norm', default=0.5)
+    parser.add_argument('--kfac_clip', type=float, help='KL clip for KFAC Optimizer', default=0.001)
     return parser.parse_args()
 
 

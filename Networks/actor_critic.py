@@ -74,7 +74,7 @@ class MLPGaussianActor(nn.Module):
         else:
             critic_body = self.critic_body(obs)
             value = self.critic(critic_body)
-            return dist.log_prob(actions), torch.squeeze(value),dist.entropy()
+            return dist.log_prob(actions), torch.squeeze(value), dist.entropy()
 
     def act(self,obs):
         obs=obs.float()
