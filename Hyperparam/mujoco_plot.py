@@ -3,22 +3,18 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/progressHopper-weighted-ppo-tune4.csv', header=0, index_col='hyperparam')
+data = pd.read_csv('./logs/progressmujoco-weighted-ppo-test1.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:150]
 
+param = {'agent': ['ppo','ppo_shared_gc','ppo_shared_gc2'], 'env': ['Walker2d-v4', 'HalfCheetah-v4', 'Ant-v4']}
 
-param = {'lr_weight': [0.001,0.0003],'closs':[1,5],'scale_weight': [15,20],'buffer':[2048],
-         'agent':['ppo_shared_gc']}
-
-seeds = range(5)
+seeds = [4,5,6]
 steps = list(data)
 plt.figure()
-for values in list(itertools.product(param['lr_weight'], param['closs'], param['scale_weight'],param['buffer'],param['agent'])):
+for values in list(itertools.product(param['agent'],param['env'])):
     results = []
-    if values[4] == 'weighted_ppo' and values[1]!=10:
-        continue
 
     for seed in seeds:
         name = [str(k) for k in values]

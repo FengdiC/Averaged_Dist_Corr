@@ -11,13 +11,12 @@ from Components import utils, logger
 from train import train
 import mujoco
 
-param = {'lr': [0.0009,0.0006,0.0003,0.0001],'buffer':[1024,2048,3072],
-         'LAMBDA_2':[1,10,20]}
+param = {'lr': [0.0003,0.0001],'buffer':[1024,2048,3072],'LAMBDA_2':[1,10,20]}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
 
-args.env='Hopper-v3'
+args.env='Hopper-v4'
 args.agent='ppo'
 args.naive=False
 args.continuous=True
@@ -30,13 +29,15 @@ args.lr_weight = 0.003
 args.gamma = 0.99
 args.continuous=True
 
-logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-ppo-tune')
+logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-ppo-tune2')
 
 for values in list(itertools.product(param['lr'], param['buffer'], param['LAMBDA_2'])):
-    args.lr = values[0]
+    args.lr= values[0]
     args.buffer = values[1]
     args.LAMBDA_2 = values[2]
 
+    if args.agent == 'weighted_ppo' and args.LAMBDA_2!=10:
+        continue
     seeds = range(5)
     returns = []
 
