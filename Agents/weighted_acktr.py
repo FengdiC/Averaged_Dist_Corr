@@ -87,8 +87,7 @@ class WeightedACKTR(ACKTR):
             # Action loss
             advantages = rets - values            
             dist_entropy = dist_entropy.mean()                              
-            # action_loss = -(advantages.detach() * action_log_probs * weights.detach()/self.args.scale_weight).mean()
-            action_loss = -(advantages.detach() * action_log_probs).mean()
+            action_loss = -(advantages.detach() * action_log_probs * weights.detach()/self.args.scale_weight).mean()            
 
             # Critic loss
             value_loss = self.value_loss_coef * advantages.pow(2).mean()            
