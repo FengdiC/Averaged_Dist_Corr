@@ -13,7 +13,7 @@ def grid_search_args(args):
     count = 0
     for batch_size in [32, 128, 512, 1024]:
         for lr in [0.3, 0.03, 0.003]:
-            for scale_weight in [10, 20, 40]:
+            for scale_weight in [1, 5, 10]:
                 for value_loss_coef in [0.25, 1]:
                     for entropy_coef in [0, 0.01]:
                         for lr_weight in [0.003, 0.0003]:

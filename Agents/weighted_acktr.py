@@ -8,7 +8,7 @@ from Networks.weight import AvgDiscount
 
 
 class WeightedACKTR(ACKTR):
-    def __init__(self, args, o_dim, n_actions, hidden, device, shared=False, **kwargs) -> None:
+    def __init__(self, args, o_dim, n_actions, hidden, device, shared=True, **kwargs) -> None:
         self.args = args
         self.o_dim  = o_dim
         self.n_actions = n_actions
