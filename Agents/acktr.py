@@ -28,7 +28,8 @@ class ACKTR():
             self.actor_critic = MLPGaussianActor(o_dim, n_actions, hidden, shared, device)        
         else:
             self.actor_critic = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
-
+        self.actor_critic.to(device)
+        
         self.optimizer = KFACOptimizer(model=self.actor_critic, lr=args.lr, kl_clip=args.kfac_clip, max_grad_norm=args.max_grad_norm)     
 
     def create_buffer(self, env):
@@ -72,7 +73,9 @@ class ACKTR():
             for step in reversed(range(rewards.size)):
                 delta = rewards[step] + (1 - dones[step]) * self.gamma * value_preds[step + 1] - value_preds[step]
                 gae = delta + (1 - dones[step]) * self.gamma * self.lmbda * gae
-                rets[step] = gae + value_preds[step]           
+                rets[step] = gae + value_preds[step]
+            
+            rets, value_preds = rets.to(self.device), value_preds.to(self.device)
 
             # Value and Action loss
             advantages = rets - values            

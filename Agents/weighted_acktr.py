@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 from Agents.acktr import ACKTR
 from Agents.kfac import WeightedKFACOptimizer
@@ -34,7 +35,7 @@ class WeightedACKTR(ACKTR):
         self.opt = WeightedKFACOptimizer(model=self.actor_critic, lr=args.lr, kl_clip=args.kfac_clip, max_grad_norm=args.max_grad_norm)             
         self.weight_opt = torch.optim.Adam(self.weight_nn.parameters(), lr=args.lr_weight)
 
-    def update_weight(self, frames, times):
+    def update_weight(self, frames, times):        
         # Discount correction
         weights = self.weight_nn(torch.from_numpy(frames).to(self.device))        
         labels = self.gamma ** times
@@ -52,9 +53,9 @@ class WeightedACKTR(ACKTR):
         loss = 0
         if count == self.buffer_size:            
             frames, rewards, dones, actions, old_lprobs, times, next_frames = self.buffer.sample(self.BS)            
-                        
-            if self.naive:
-                self.opt.weights = self.gamma**torch.from_numpy(times).to(self.device)
+
+            if self.naive:                
+                self.opt.weights = self.gamma**torch.from_numpy(times.astype(np.float32)).to(self.device)
             else:
                 # Discount correction            
                 weight_loss = self.update_weight(frames, times)        
@@ -80,6 +81,8 @@ class WeightedACKTR(ACKTR):
                 delta = rewards[step] + (1 - dones[step]) * self.gamma * value_preds[step + 1] - value_preds[step]
                 gae = delta + (1 - dones[step]) * self.gamma * self.lmbda * gae
                 rets[step] = gae + value_preds[step]           
+
+            rets, value_preds = rets.to(self.device), value_preds.to(self.device)
 
             # Action loss
             advantages = rets - values            
