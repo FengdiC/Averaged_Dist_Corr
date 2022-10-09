@@ -1,15 +1,16 @@
 import torch
+import itertools
 
 import torch.nn as nn
 import numpy as np
 
-from Agents.kfac import KFACOptimizer
+from Agents.kfac import KFACOptimizer, WeightedKFACOptimizer
 from Components.buffer import Buffer
 from Networks.actor_critic import MLPGaussianActor, MLPCategoricalActor, NNCategoricalActor, NNGaussianActor, NNGammaCritic
 
 
 class ACKTR():
-    def __init__(self, args, o_dim, n_actions, hidden, device, shared=False, **kwargs) -> None:
+    def __init__(self, args, o_dim, n_actions, hidden, device, shared=True, **kwargs) -> None:
         self.args = args
         self.o_dim  = o_dim
         self.n_actions = n_actions
@@ -26,7 +27,7 @@ class ACKTR():
         if args.continuous:
             self.actor_critic = MLPGaussianActor(o_dim, n_actions, hidden, shared, device)        
         else:
-            self.actor_critic = MLPCategoricalActor(o_dim, n_actions, hidden, shared=False)
+            self.actor_critic = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
 
         self.optimizer = KFACOptimizer(model=self.actor_critic, lr=args.lr, kl_clip=args.kfac_clip, max_grad_norm=args.max_grad_norm)     
 
@@ -109,7 +110,8 @@ class ACKTR():
         return 0, count
 
 
-class WeightedACKTR(ACKTR):
+class SimpleWeightedACKTR(ACKTR):
+    """ Uses KFAC only for Actor. GammaCritic uses Adam """
     def __init__(self, args, o_dim, n_actions, hidden, device, shared=False, **kwargs) -> None:
         self.args = args
         self.o_dim  = o_dim
@@ -133,7 +135,7 @@ class WeightedACKTR(ACKTR):
         self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
         self.weight_critic.to(device)
 
-        self.actor_opt = KFACOptimizer(model=self.actor, lr=args.lr, kl_clip=args.kfac_clip, max_grad_norm=args.max_grad_norm)     
+        self.actor_opt = WeightedKFACOptimizer(model=self.actor, lr=args.lr, kl_clip=args.kfac_clip, max_grad_norm=args.max_grad_norm)             
         self.weight_critic_opt = torch.optim.Adam(self.weight_critic.parameters(), lr=args.lr_weight)
 
     def act(self, op):
@@ -144,10 +146,29 @@ class WeightedACKTR(ACKTR):
         
         return a, lprob
 
+    def update_weight(self, frames, times):
+        values, weights = self.weight_critic(torch.from_numpy(frames).to(self.device))
+        
+        self.actor_opt.weights = weights.detach()/self.args.scale_weight
+        
+        # Discount correction
+        labels = self.gamma ** times
+        weight_loss = torch.mean((torch.from_numpy(labels).to(self.device) * self.args.scale_weight - weights)**2)
+      
+        self.weight_critic_opt.zero_grad()
+        weight_loss.backward()
+        self.weight_critic_opt.step()
+        
+        return weight_loss.item()
+
     def learn(self, count, obs):
         loss = 0
         if count == self.buffer_size:            
             frames, rewards, dones, actions, old_lprobs, times, next_frames = self.buffer.sample(self.BS)            
+            
+            # Discount correction
+            weight_loss = self.update_weight(frames, times)
+            
             action_log_probs, dist_entropy = self.actor(torch.from_numpy(frames).to(self.device), torch.from_numpy(actions).to(self.device))
             values, weights = self.weight_critic(torch.from_numpy(frames).to(self.device))
             last_val, _ = self.weight_critic(torch.from_numpy(obs).unsqueeze(0).to(self.device)) 
@@ -166,15 +187,14 @@ class WeightedACKTR(ACKTR):
             # Action loss
             advantages = rets - values            
             dist_entropy = dist_entropy.mean()                              
-            action_loss = -(advantages.detach() * action_log_probs * weights.detach()/self.args.scale_weight).mean()
+            action_loss = -(advantages.detach() * action_log_probs).mean()
             
-            # Weight & Critic loss
+            # Critic loss
             value_loss = self.value_loss_coef * advantages.pow(2).mean()            
-            labels = self.gamma ** times
-            weight_loss = torch.mean((torch.from_numpy(labels).to(self.device) * self.args.scale_weight - weights)**2)
 
             # Fisher loss for actor
-            if self.actor_opt.steps % self.actor_opt.Ts == 0:
+            self.actor_opt.weights = weights.detach()/self.args.scale_weight            
+            if self.actor_opt.steps % self.actor_opt.Ts == 0:                
                 # Compute fisher, see Martens 2014
                 self.actor.zero_grad()
                 pg_fisher_loss = -action_log_probs.mean()
@@ -189,9 +209,9 @@ class WeightedACKTR(ACKTR):
             self.actor_opt.step()
 
             self.weight_critic_opt.zero_grad()
-            (value_loss + weight_loss).backward()
+            value_loss.backward()
             self.weight_critic_opt.step()
-
+            
             self.buffer.empty()
             count = 0
             return value_loss.item() + action_loss.item(), count
