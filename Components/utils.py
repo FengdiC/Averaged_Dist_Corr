@@ -40,6 +40,7 @@ def argsparser():
     parser.add_argument('--value_fisher_coef', type=float, help='Value fisher coefficient', default=1.0)
     parser.add_argument('--max_grad_norm', type=float, help='Maximum gradient norm', default=0.5)
     parser.add_argument('--kfac_clip', type=float, help='KL clip for KFAC Optimizer', default=0.001)
+    parser.add_argument('--hyp_seed', help='Hyper-parameter RNG seed', type=int, default=0)
     return parser.parse_args()
 
 
