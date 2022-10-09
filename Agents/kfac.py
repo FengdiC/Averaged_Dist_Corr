@@ -112,7 +112,7 @@ class KFACOptimizer(optim.Optimizer):
                  fast_cnn=False,
                  Ts=1,
                  Tf=10,
-                 max_grad_norm=1,
+                 max_grad_norm=1,                 
                  ):
         defaults = dict()
 
@@ -168,7 +168,7 @@ class KFACOptimizer(optim.Optimizer):
             if classname == 'Conv2d':
                 layer_info = (module.kernel_size, module.stride,
                               module.padding)
-
+            
             aa = compute_cov_a(input[0].data, classname, layer_info,
                                self.fast_cnn)
 
@@ -262,3 +262,51 @@ class KFACOptimizer(optim.Optimizer):
 
         self.optim.step()
         self.steps += 1
+
+
+class WeightedKFACOptimizer(KFACOptimizer):
+    def __init__(self, model, lr=0.25, momentum=0.9, stat_decay=0.99, kl_clip=0.001, damping=0.01, weight_decay=0, fast_cnn=False, Ts=1, Tf=10, max_grad_norm=1):
+        super().__init__(model, lr, momentum, stat_decay, kl_clip, damping, weight_decay, fast_cnn, Ts, Tf, max_grad_norm)
+
+    def _save_input(self, module, input):
+        if torch.is_grad_enabled() and self.steps % self.Ts == 0:
+            classname = module.__class__.__name__
+            layer_info = None
+            if classname == 'Conv2d':
+                layer_info = (module.kernel_size, module.stride,
+                              module.padding)
+
+            # TODO: Fix this hack assuming 1D vector
+            n_col = input[0].data.shape[1]
+            w = torch.sqrt(self.weights).repeat(n_col).view(n_col, -1).T
+            a = w * input[0].data            
+            aa = compute_cov_a(a, classname, layer_info,
+                               self.fast_cnn)
+            
+            # Initialize buffers
+            if self.steps == 0:
+                self.m_aa[module] = aa.clone()
+
+            update_running_stat(aa, self.m_aa[module], self.stat_decay)
+
+    def _save_grad_output(self, module, grad_input, grad_output):
+        # Accumulate statistics for Fisher matrices
+        if self.acc_stats:
+            classname = module.__class__.__name__
+            layer_info = None
+            if classname == 'Conv2d':
+                layer_info = (module.kernel_size, module.stride,
+                              module.padding)
+            
+            # TODO: Fix this hack assuming 1D vector
+            n_col = grad_output[0].data.shape[1]
+            w = torch.sqrt(self.weights).repeat(n_col).view(n_col, -1).T
+            g = w * grad_output[0].data
+            gg = compute_cov_g(g, classname, layer_info,
+                               self.fast_cnn)
+
+            # Initialize buffers
+            if self.steps == 0:
+                self.m_gg[module] = gg.clone()
+
+            update_running_stat(gg, self.m_gg[module], self.stat_decay)
