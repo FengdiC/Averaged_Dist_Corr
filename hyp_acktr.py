@@ -52,12 +52,8 @@ def main():
     make_dir(work_dir)        
 
     seeds = range(30)
-    args.continuous = False
-    
-    
-    # if args.agent=='batch_ac' and args.epoch>1:
-    #     continue
-    if args.env in ['MountainCarContinuous-v0','Pendulum-v1']:
+
+    if args.env in ['MountainCarContinuous-v0', 'Pendulum-v1', 'Reacher-v2']:
         args.continuous = True
 
     for seed in seeds:
