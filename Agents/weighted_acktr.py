@@ -56,6 +56,7 @@ class WeightedACKTR(ACKTR):
 
             if self.naive:                
                 self.opt.weights = self.gamma**torch.from_numpy(times.astype(np.float32)).to(self.device)
+                weights = self.gamma**torch.from_numpy(times.astype(np.float32)).to(self.device)
             else:
                 # Discount correction            
                 weight_loss = self.update_weight(frames, times)        
