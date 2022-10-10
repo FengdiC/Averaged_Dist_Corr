@@ -10,13 +10,14 @@ from Networks.actor_critic import MLPGaussianActor, MLPCategoricalActor, NNCateg
 
 
 class ACKTR():
-    def __init__(self, args, o_dim, n_actions, hidden, device, shared=True, **kwargs) -> None:
+    def __init__(self, args, o_dim, n_actions, hidden, device, shared=False, **kwargs) -> None:
         self.args = args
         self.o_dim  = o_dim
         self.n_actions = n_actions
         self.gamma = args.gamma
         self.lmbda = args.lam
         self.value_loss_coef = args.value_loss_coef
+        self.value_fisher_coef = args.value_fisher_coef
         self.entropy_coef = args.entropy_coef
         self.max_grad_norm = args.max_grad_norm
         self.continuous = args.continuous
@@ -94,7 +95,7 @@ class ACKTR():
                     value_noise = value_noise.cuda()
 
                 sample_values = values + value_noise
-                vf_fisher_loss = -(values - sample_values.detach()).pow(2).mean()
+                vf_fisher_loss = -(values - sample_values.detach()).pow(2).mean() * self.value_fisher_coef
 
                 fisher_loss = pg_fisher_loss + vf_fisher_loss
                 self.optimizer.acc_stats = True
@@ -122,6 +123,7 @@ class SimpleWeightedACKTR(ACKTR):
         self.gamma = args.gamma
         self.lmbda = args.lam
         self.value_loss_coef = args.value_loss_coef
+        self.value_fisher_coef = args.value_fisher_coef
         self.entropy_coef = args.entropy_coef
         self.max_grad_norm = args.max_grad_norm
         self.continuous = args.continuous
