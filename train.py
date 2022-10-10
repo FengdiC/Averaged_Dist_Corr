@@ -1,8 +1,10 @@
 import torch
 import gym
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 from config import agents_dict
 from Components.utils import argsparser
 from Envs.gym_repeat import RepeatEnvWrapper
@@ -101,4 +103,7 @@ def train(args):
 
 if __name__ == "__main__":
     args = argsparser()
-    train(args)
+    tic = time.time()
+    avgrets = train(args)
+    print("Run took:", time.time() - tic)
+    np.savetxt("./results/{}_{}_{}-{}.txt".format(args.env, args.agent, args.naive, args.seed), avgrets)
