@@ -32,6 +32,7 @@ class ACKTR():
         self.actor_critic.to(device)
         
         self.optimizer = KFACOptimizer(model=self.actor_critic, lr=args.lr, kl_clip=args.kfac_clip, max_grad_norm=args.max_grad_norm)     
+        # self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer.optim, step_size=10000, gamma=0.9)
 
     def create_buffer(self, env):
         # Create the buffer
@@ -79,7 +80,8 @@ class ACKTR():
             rets, value_preds = rets.to(self.device), value_preds.to(self.device)
 
             # Value and Action loss
-            advantages = rets - values            
+            advantages = rets - values
+            advantages = (advantages - advantages.mean())/(advantages.std() + 1e-6)            
             dist_entropy = dist_entropy.mean()                  
             value_loss = advantages.pow(2).mean()
             action_loss = -(advantages.detach() * action_log_probs).mean()
@@ -105,7 +107,8 @@ class ACKTR():
             # Apply gradients
             self.optimizer.zero_grad()            
             (value_loss * self.value_loss_coef + action_loss - dist_entropy * self.entropy_coef).backward()
-            self.optimizer.step()            
+            self.optimizer.step()
+            # self.scheduler.step()            
 
             self.buffer.empty()
             count = 0
