@@ -8,10 +8,11 @@ import matplotlib.pyplot as plt
 from config import agents_dict
 from Components.utils import argsparser
 from Envs.gym_repeat import RepeatEnvWrapper
-
+from Components.running_stat import ZFilter
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
     seed = args.seed
     print(device)
 
@@ -41,6 +42,10 @@ def train(args):
     # Create the buffer
     agent.create_buffer(env)
 
+    obfilter = None
+    if args.continuous:
+        obfilter = ZFilter(env.observation_space.shape)
+    
     ret = step = 0
     rets = []
     ep_lens = []
@@ -48,6 +53,8 @@ def train(args):
     losses = []
     avglos = []
     op = env.reset()
+    if obfilter is not None:
+        op = obfilter(op)
 
     num_steps = 1000000
     checkpoint = 10000
@@ -57,11 +64,18 @@ def train(args):
     for steps in range(num_steps):
         # does torch need expand_dims
         a, lprob = agent.act(op)
-        obs, r, done, infos = env.step(a)
+        if args.continuous:    
+            scaled_ac = env.action_space.low + (a + 1.) * 0.5 * (env.action_space.high - env.action_space.low)
+            scaled_ac = np.clip(scaled_ac, env.action_space.low, env.action_space.high)
+            obs, r, done, infos = env.step(scaled_ac)
+        else:
+            obs, r, done, infos = env.step(a)
         agent.store(op,r,done,a,lprob,time)
 
-        # Observe
+        # Observe        
         op = obs
+        if obfilter is not None:
+            op = obfilter(op)
         time += 1
         count += 1
         
@@ -77,7 +91,7 @@ def train(args):
             num_episode += 1
             rets.append(ret)
             ep_lens.append(step)
-            # print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
+            print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
 
             ret = 0
             step = 0
@@ -91,14 +105,14 @@ def train(args):
             avglos.append(np.mean(losses))
             rets = []
             losses = []
-            plt.clf()
-            plt.subplot(211)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
-            plt.subplot(212)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
+            # plt.clf()
+            # plt.subplot(211)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgrets)
+            # plt.subplot(212)
+            # plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avglos)
+            # # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
+            # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
+            # plt.pause(0.001)
     return avgrets
 
 if __name__ == "__main__":
