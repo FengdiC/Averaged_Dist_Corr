@@ -1,15 +1,18 @@
 import torch
 import gym
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 from config import agents_dict
 from Components.utils import argsparser
 from Envs.gym_repeat import RepeatEnvWrapper
-
+from Components.running_stat import ZFilter
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
     seed = args.seed
     print(device)
 
@@ -28,14 +31,21 @@ def train(args):
     # Set the agent
     network = agents_dict[args.agent]
     if args.continuous:
-        agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden,args,device,continuous=True)
+        agent = network(lr=args.lr, gamma=args.gamma, BS=args.batch_size, 
+                        o_dim=o_dim, n_actions=a_dim, hidden=args.hidden, args=args,
+                        device=device, continuous=True)
     else:
-        agent = network(args.lr,args.gamma,args.batch_size,o_dim,a_dim,args.hidden,args,device)
+        agent = network(lr=args.lr, gamma=args.gamma, BS=args.batch_size,
+                        o_dim= o_dim, n_actions=a_dim, hidden=args.hidden, args=args, device=device)
 
     # Experiment block starts
     # Create the buffer
     agent.create_buffer(env)
 
+    obfilter = None
+    if args.continuous:
+        obfilter = ZFilter(env.observation_space.shape)
+    
     ret = step = 0
     rets = []
     ep_lens = []
@@ -43,6 +53,8 @@ def train(args):
     losses = []
     avglos = []
     op = env.reset()
+    if obfilter is not None:
+        op = obfilter(op)
 
     num_steps = 1000000
     checkpoint = 10000
@@ -52,15 +64,22 @@ def train(args):
     for steps in range(num_steps):
         # does torch need expand_dims
         a, lprob = agent.act(op)
-        obs, r, done, infos = env.step(a)
+        if args.continuous:    
+            scaled_ac = env.action_space.low + (a + 1.) * 0.5 * (env.action_space.high - env.action_space.low)
+            scaled_ac = np.clip(scaled_ac, env.action_space.low, env.action_space.high)
+            obs, r, done, infos = env.step(scaled_ac)
+        else:
+            obs, r, done, infos = env.step(a)
         agent.store(op,r,done,a,lprob,time)
 
-        # Observe
+        # Observe        
         op = obs
+        if obfilter is not None:
+            op = obfilter(op)
         time += 1
         count += 1
-
-        loss,count=agent.learn(count,obs)
+        
+        loss, count = agent.learn(count, obs)
         losses.append(loss)
 
         # End of Episode
@@ -72,7 +91,7 @@ def train(args):
             num_episode += 1
             rets.append(ret)
             ep_lens.append(step)
-            # print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
+            print("Episode {} ended with return {:.2f} in {} steps. Total steps: {}".format(num_episode, ret, step, steps))
 
             ret = 0
             step = 0
@@ -95,6 +114,10 @@ def train(args):
             # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
             # plt.pause(0.001)
     return avgrets
-
-# args = argsparser()
-# train(args)
+    
+if __name__ == "__main__":
+    args = argsparser()
+    tic = time.time()
+    avgrets = train(args)
+    print("Run took:", time.time() - tic)
+    np.savetxt("./results/{}_{}_{}-{}.txt".format(args.env, args.agent, args.naive, args.seed), avgrets)

@@ -32,8 +32,15 @@ def argsparser():
     parser.add_argument('--lr', type=float, help='Max Episode Length', default=0.0003)
     parser.add_argument('--LAMBDA_1', type=float, help='Lambda 1 for entropy', default=0)
     parser.add_argument('--LAMBDA_2', type=float, help='Lambda 2 for mse', default=10)
-    parser.add_argument('--naive', type=bool, help='IF add on naive gamma power correction', default=True)
-    parser.add_argument('--continuous', type=bool, help='whether actions are continuous', default=False)
+    parser.add_argument('--naive', help='IF add on naive gamma power correction', action='store_true')
+    parser.add_argument('--continuous', help='whether actions are continuous', action='store_true')
+    # ACKTR
+    parser.add_argument('--value_loss_coef', type=float, help='Value loss coefficient', default=0.25)
+    parser.add_argument('--entropy_coef', type=float, help='Entropy coefficient', default=0.01)
+    parser.add_argument('--value_fisher_coef', type=float, help='Value fisher coefficient', default=1.0)
+    parser.add_argument('--max_grad_norm', type=float, help='Maximum gradient norm', default=0.5)
+    parser.add_argument('--kfac_clip', type=float, help='KL clip for KFAC Optimizer', default=0.001)
+    parser.add_argument('--hyp_seed', help='Hyper-parameter RNG seed', type=int, default=0)
     return parser.parse_args()
 
 
