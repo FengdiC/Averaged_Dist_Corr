@@ -28,14 +28,14 @@ args.scale_weight = 10.0
 args.LAMBDA_2 = 1.0
 args.lr_weight = 0.003
 args.gamma = 0.99
-
+args.naive=False
 logger.configure(args.log_dir, ['csv'], log_suffix='CartPole-shared-tune')
 
 for values in list(itertools.product(param['lr_weight'], param['scale_weight'], param['LAMBDA_2'])):
     args.lr_weight = values[0]
     args.scale_weight = values[1]
     args.LAMBDA_2 = values[2]
-    seeds = range(15)
+    seeds = range(5)
     returns = []
 
     # if args.agent=='batch_ac' and args.epoch>1:
