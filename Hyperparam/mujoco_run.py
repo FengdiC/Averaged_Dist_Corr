@@ -1,5 +1,4 @@
 import numpy as np
-from Components import utils, logger
 import itertools
 import os
 import sys
@@ -9,11 +8,12 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 from train import train
+from Components import utils, logger
 
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent': ['ppo'], 'env': ['Hopper-v4', 'HalfCheetah-v4', 'Ant-v4']}
+param = {'agent': ['ppo'], 'env': ['Walker2d-v4', 'HalfCheetah-v4', 'Ant-v4']}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
@@ -21,19 +21,19 @@ args = utils.argsparser()
 args.buffer = 2048
 args.batch_size = 64
 args.lr = 0.0003
-args.scale_weight = 10.0
-args.LAMBDA_2 = 10.0
-args.lr_weight = 0.003
+args.scale_weight = 15.0
+args.LAMBDA_2 = 1.0
+args.lr_weight = 0.0003
 args.gamma = 0.99
 args.continuous= True
 
-logger.configure(args.log_dir, ['csv'], log_suffix='mujoco-ppo-part1')
+logger.configure(args.log_dir, ['csv'], log_suffix='mujoco-ppo-test')
 
 for values in list(itertools.product(param['agent'], param['env'])):
     args.agent = values[0]
     # args.naive = values[1]
     args.env = values[1]
-    seeds = range(15)
+    seeds = [4,5,6]
     returns = []
 
     for seed in seeds:
