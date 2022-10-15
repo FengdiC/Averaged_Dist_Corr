@@ -223,7 +223,7 @@ def bias_compare(env,all_frames,d_pi,correction,est):
 
 def tune():
     args = argsparser()
-    logger.configure(args.log_dir,['csv'], log_suffix='-sigmoid')
+    logger.configure(args.log_dir,['csv'], log_suffix='Reacher-tanh')
     ratio = []
     err = []
     err_buffer = []
@@ -238,12 +238,12 @@ def tune():
     args.LAMBDA_2=1.0
 
     agent = ['batch_ac_shared_gc']
-    activation = ['sigmoid']
+    activation = ['tanh']
     checkpoint = 1000
 
     for values in list(itertools.product(agent,activation)):
         print(values)
-        seeds = range(5)
+        seeds = range(30)
         for seed in seeds:
             args.seed = seed
             avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.2)
@@ -375,4 +375,4 @@ def fixed_policy_check(stepsize = 0.2):
             #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
             plt.pause(0.001)
 
-tune()
+fixed_policy_check()

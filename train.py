@@ -17,8 +17,8 @@ def train(args):
     print(device)
 
     # Create Env
-    env = gym.make(args.env)
-    # env = RepeatEnvWrapper(args.env)
+    # env = gym.make(args.env)
+    env = RepeatEnvWrapper(args.env)
     env.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -114,7 +114,7 @@ def train(args):
             # #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
             # plt.pause(0.001)
     return avgrets
-
+    
 if __name__ == "__main__":
     args = argsparser()
     tic = time.time()
