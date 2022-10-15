@@ -3,7 +3,46 @@ import numpy as np
 import pandas as pd
 import itertools
 
-data = pd.read_csv('./logs/architecture/Reacher/Reacher_shared.csv', header=0, index_col='hyperparam')
+import matplotlib.pyplot as plt
+
+
+def setsizes():
+    plt.rcParams['axes.linewidth'] = 1.0
+    plt.rcParams['lines.markeredgewidth'] = 1.0
+    plt.rcParams['lines.markersize'] = 3
+
+    plt.rcParams['xtick.labelsize'] = 17.0
+    plt.rcParams['ytick.labelsize'] = 17.0
+    plt.rcParams['xtick.direction'] = "out"
+    plt.rcParams['ytick.direction'] = "in"
+    plt.rcParams['lines.linewidth'] = 2.0
+    plt.rcParams['ytick.minor.pad'] = 50.0
+
+
+def setaxes():
+    plt.gcf().subplots_adjust(bottom=0.2)
+    plt.gcf().subplots_adjust(left=0.2)
+    ax = plt.gca()
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
+    # ax.spines['left'].set_color('none')
+    ax.axes.set_ylim(0,None)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    ax.tick_params(axis='both', direction='out', which='minor', width=2, length=3,
+                   labelsize=16, pad=8)
+    ax.tick_params(axis='both', direction='out', which='major', width=2, length=8,
+                   labelsize=16, pad=8)
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['bottom'].set_linewidth(2)
+    ax.spines['right'].set_linewidth(2)
+    ax.spines['top'].set_linewidth(2)
+    # for tick in ax.xaxis.get_major_ticks():
+    #     tick.label.set_fontsize(getxticklabelsize())
+    # for tick in ax.yaxis.get_major_ticks():
+    #     tick.label.set_fontsize(getxticklabelsize())
+
+data = pd.read_csv('./logs/Reacher_all.csv', header=0, index_col='hyperparam')
 data.columns = data.columns.astype(int)
 data = data.sort_index(axis=1, ascending=True)
 data = data.iloc[:,:20]
@@ -14,17 +53,19 @@ checkpoint = 1000
 #         'ReLU-5-0.0001-batch_ac_shared_gc','sigmoid-5-0.0001-batch_ac_shared_gc',
 #         'tanh-5-0.001-batch_ac_shared_gc']
 #
-name = ['ReLU-weighted_batch_ac-0.005-0.01', 'batch_ac_shared_gc-0.0005-0.001-1-5']
+name = ['weighted_batch_ac-ReLU', 'batch_ac_shared_gc-ReLU']
 
-seeds = range(5)
+seeds = range(30)
 steps = list(data)
-plt.figure(figsize=(12,8), dpi=80)
+plt.figure(figsize=(11,7),dpi=110)
+setsizes()
+setaxes()
 for values in list(itertools.product(name)):
     results = {'errs':[],'err-ratios':[],'errs-buffer':[],'rets':[]}
-    if values[0] == "batch_ac_shared_gc-0.0005-0.001-1-5":
+    if values[0] == "batch_ac_shared_gc-ReLU":
         line_name='shared'
         color = 'orangered'
-    elif values[0] == "ReLU-weighted_batch_ac-0.005-0.01":
+    elif values[0] == "weighted_batch_ac-ReLU":
         line_name = 'non-shared'
         color = 'dodgerblue'
     else:
@@ -45,17 +86,19 @@ for values in list(itertools.product(name)):
     plt.subplot(121)
     M = np.array(results['err-ratios'])
     mean = np.mean(M, axis=0)
-    std = np.std(M,axis=0)
+    std = np.std(M,axis=0)/np.sqrt(30)
     plt.plot(steps, mean, color=color, label=line_name)
-    plt.fill_between(steps,mean-std,mean+std,color=color,alpha=0.5)
+    plt.fill_between(steps,mean-std,mean+std,color=color,alpha=0.2)
     # plt.plot(steps,mean, label=name)
     # plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
     # plt.errorbar(steps, mean, std,  label=name, alpha=0.5, elinewidth=0.9)
     # define y_axis, x_axis
-    plt.xticks(fontsize=11)
-    plt.yticks(fontsize=15)
-    plt.xlabel("steps",fontsize=18)
-    plt.ylabel("Ratio between biases",fontsize=18)
+    plt.yticks(fontsize=17)
+    plt.xlabel("steps",fontsize=19)
+    plt.ylabel("Ratio between biases",fontsize=19)
+    plt.xticks(fontsize=17, rotation=45)
+    plt.ylim(0, None)
+    setaxes()
     # plt.title('Ratio between our approximation bias and the wrong state distribution bias')
     # plt.subplot(222)
     # M = np.array(results['errs'])
@@ -93,15 +136,15 @@ for values in list(itertools.product(name)):
     # plt.xlabel("steps")
     # plt.ylabel("Undiscounted Returns")
     # plt.title('Returns')
-plt.legend(prop={"size":16})
+plt.legend(prop={"size":17})
 
 
-name = ['batch_ac_shared_gc-sigmoid','batch_ac_shared_gc-0.0005-0.001-1-5','batch_ac_shared_gc-tanh']
-seeds = range(5)
+name = ['batch_ac_shared_gc-sigmoid','batch_ac_shared_gc-ReLU','batch_ac_shared_gc-tanh']
+seeds = range(30)
 steps = list(data)
 for values in list(itertools.product(name)):
     results = {'errs':[],'err-ratios':[],'errs-buffer':[],'rets':[]}
-    if values[0] == "batch_ac_shared_gc-0.0005-0.001-1-5":
+    if values[0] == "batch_ac_shared_gc-ReLU":
         line_name='ReLU'
         color = 'orangered'
     elif values[0] == "batch_ac_shared_gc-sigmoid":
@@ -125,17 +168,19 @@ for values in list(itertools.product(name)):
     plt.subplot(122)
     M = np.array(results['err-ratios'])
     mean = np.mean(M, axis=0)
-    std = np.std(M,axis=0)
+    std = np.std(M,axis=0)/np.sqrt(30)
     plt.plot(steps, mean, color=color, label=line_name)
-    plt.fill_between(steps,mean - std, mean + std, color=color, alpha=0.5)
+    plt.fill_between(steps,mean - std, mean + std, color=color, alpha=0.2)
     # plt.plot(steps,mean, label=name)
     # plt.errorbar(steps, mean, std,color=color, label=line_name,alpha=0.5,elinewidth=0.9)
     # plt.errorbar(steps, mean, std,  label=name, alpha=0.5, elinewidth=0.9)
     # define y_axis, x_axis
-    plt.xticks(fontsize=11)
-    plt.yticks(fontsize=15)
-    plt.xlabel("steps",fontsize=18)
-    plt.ylabel("Ratio between biases",fontsize=18)
+    plt.xticks(fontsize=17, rotation=45)
+    plt.yticks(fontsize=17)
+    plt.xlabel("steps",fontsize=19)
+    plt.ylabel("Ratio between biases",fontsize=19)
+    plt.ylim(0, None)
+    setaxes()
     # plt.title('Ratio between our approximation bias and the wrong state distribution bias')
     # plt.subplot(222)
     # M = np.array(results['errs'])
@@ -175,7 +220,8 @@ for values in list(itertools.product(name)):
     # plt.title('Returns')
 
 # set legend
-plt.legend(prop={"size":16})
+plt.legend(prop={"size":17})
 # plt.suptitle('Ratio between our approximation bias and the wrong state distribution bias',fontsize=18)
+plt.tight_layout()
 plt.show()
 
