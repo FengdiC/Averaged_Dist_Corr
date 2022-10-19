@@ -15,6 +15,7 @@ def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = torch.device('cpu')
     seed = args.seed
+    args.env = "UR5-Reacher"
     print(device)
 
     torch.manual_seed(seed)
@@ -74,8 +75,8 @@ def train(args):
     op = env.reset()
 
 
-    num_steps = 100000
-    checkpoint = 10000
+    num_steps = 150000
+    checkpoint = 2000
     num_episode = 0
     count = 0
     time = 0
@@ -130,10 +131,12 @@ def train(args):
             # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
             #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
             plt.pause(0.001)
-            data = np.array((2, len(all_rets)))
-            data[0] = np.array(ep_lens)
-            data[1] = np.array(all_rets)
+            data = np.zeros((2, len(all_rets)))
+            data[0, :] = np.array(ep_lens)
+            data[1, :] = np.array(all_rets)
             np.savetxt('UR5Reacher_{}_{}_{}.txt'.format(args.agent, args.naive, seed), data)
+    env.close()
+    env.terminate()
     return avgrets
     
 if __name__ == "__main__":
