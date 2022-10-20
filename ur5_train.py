@@ -13,7 +13,6 @@ from senseact.utils import NormalizedEnv
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cpu')
     seed = args.seed
     args.env = "UR5-Reacher"
     print(device)
