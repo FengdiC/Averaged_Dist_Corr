@@ -95,6 +95,29 @@ def avg_run_plot():
         plt.pause(0.001)            
         plt.show()       
 
+
+def ur5_plot():
+    from rl_suite.plot.plot import smoothed_curve
+    x_tick = window_len = 10000
+    agents = ["UR5Reacher_ppo_False", "UR5Reacher_ppo_True", 'UR5Reacher_weighted_shared_ppo_False']
+    colors = ['dodgerblue', 'blueviolet', 'orangered']   
+    labels = ['existing', 'naive', 'corrected'] 
+
+    for i, agent in enumerate(agents):
+        for seed in range(1,2):
+            data = np.loadtxt("{}_{}.txt".format(agent, seed))
+            rets = data[1]
+            ep_lens = data[0]
+
+            y, x = smoothed_curve(rets, ep_lens, x_tick=x_tick, window_len=window_len)
+            plt.plot(x, y, label=labels[i], color=colors[i]) 
+    
+    plt.legend()
+    plt.tight_layout()
+    plt.grid()
+    plt.show()
+
 if __name__ == "__main__":
-    avg_run_plot()
+    # avg_run_plot()
+    ur5_plot()
   
