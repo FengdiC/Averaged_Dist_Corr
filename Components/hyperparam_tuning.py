@@ -13,12 +13,14 @@ from train import train
 # param = {'lr_weight':[0.0001,0.0003,0.003,0.01],'weight_activation':['sigmoid','ReLU','tanh'],
 #          'scale_weight':[1.0,10.0,100.0]}
 
-param = {'agent':['batch_ac_shared_gc', 'batch_ac'], 'naive':[False,True],
-         'env':['MountainCarContinuous-v0']}
+param = {'naive':[True],'lr':[0.0003],'buffer':[8,16],
+         'LAMBDA_2':[10,20]}
 
 args = utils.argsparser()
 # env, gamma, continuous are decided through args input
 
+args.agent='batch_ac'
+args.env='CartPole-v1'
 args.buffer=64
 args.batch_size = 64
 args.lr = 0.0003
@@ -27,13 +29,15 @@ args.LAMBDA_2=1.0
 args.lr_weight= 0.003
 args.gamma = 0.99
 
-logger.configure(args.log_dir,['csv'], log_suffix='classic-control-weighted-ReLU-repeat-2')
+logger.configure(args.log_dir,['csv'], log_suffix='CartPole-batch-ac-tune-naive-buffer')
 
-for values in list(itertools.product(param['agent'],param['naive'],param['env'])):
-    args.agent = values[0]
-    args.naive = values[1]
-    args.env = values[2]
-    seeds = range(15)
+for values in list(itertools.product(param['naive'],param['lr'],param['buffer'],param['LAMBDA_2'])):
+    args.naive = values[0]
+    args.lr = values[1]
+    args.buffer = values[2]
+    args.batch_size = values[2]
+    args.LAMBDA_2 = values[3]
+    seeds = range(5)
     args.continuous = False
     returns = []
 	
