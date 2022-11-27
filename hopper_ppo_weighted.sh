@@ -12,7 +12,7 @@ source $HOME/Documents/ENV/bin/activate
 module load python/3.7
 
 SECONDS=0
-python spinningup/Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --env "Hopper-v3" --log_dir=$SCRATCH/avg_discount/logs/ &
+python spinningup/Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --env "Hopper-v4" --log_dir=$SCRATCH/avg_discount/logs/ &
 
 echo "Baseline job $seed took $SECONDS"
 sleep 3h
