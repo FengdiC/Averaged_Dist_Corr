@@ -18,6 +18,7 @@ def argsparser():
     parser.add_argument('--log_dir', help='log direction', type=str, default='./logs/')
 
     parser.add_argument('--hidden', type=int, help='Number of hidden units', default=64)
+    parser.add_argument('--hidden_weight', type=int, help='Number of hidden units', default=64)
     parser.add_argument('--var', type=float, help='Initialization value for action probability variacne', default=1)
     parser.add_argument('--lr_decay', type=float, help='The decay step for learning rate schedule', default=1e5)
     parser.add_argument('--batch_size', type=int, help='Max Episode Length', default=64)

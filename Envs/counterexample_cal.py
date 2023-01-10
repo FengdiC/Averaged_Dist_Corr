@@ -83,8 +83,8 @@ def batch_weighted_grad(theta,log_grad,correction,states_idx,actions,times,gamma
 
     grad = correction * log_grad * torch.from_numpy(values)
     # grad = gamma**torch.from_numpy(times)*log_grad * torch.from_numpy(values)
-    print('correction: ', correction.detach().numpy())
-    print(gamma**times)
+    # print('correction: ', correction.detach().numpy())
+    # print(gamma**times)
     return torch.mean(grad)
 
 def batch_naive_grad(theta,log_grad,correction,states_idx,actions,times,gamma):
@@ -147,14 +147,17 @@ class Actor(torch.nn.Module):
         policies = actions*policy[1] + (1-actions)*policy[0]
         return policies
 
-    def act(self):
+    def act(self,seed):
         prob_a = torch.exp(self.theta)/(1+torch.exp(self.theta))
         prob_a = prob_a.detach().numpy()
+        np.random.seed(seed)
+        a = np.random.choice([0,1],p = [prob_a[0],1-prob_a[0]])
+        return a
         if prob_a[0]>0.5:
             return 0
         return 1
 
     def update(self,grad,lr):
-        print('before update', self.theta)
-        print(grad)
+        # print('before update', self.theta)
+        # print(grad)
         self.theta = self.theta + lr* grad

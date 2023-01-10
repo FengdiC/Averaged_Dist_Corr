@@ -30,7 +30,7 @@ class AvgDiscount_sigmoid(nn.Module):
         body = self.body(obs)
         weight = self.weight(body)
         weight = torch.sigmoid(weight)
-        return torch.squeeze(weight)/self.scale
+        return torch.squeeze(weight)
 
 class AvgDiscount_ReLU(nn.Module):
     def __init__(self,o_dim,hidden,scale=10.0):
@@ -59,4 +59,4 @@ class AvgDiscount_tanh(nn.Module):
         body = self.body(obs)
         weight = self.weight(body)
         weight = ( torch.tanh(weight)+1 )/2.0
-        return torch.squeeze(weight)/self.scale
+        return torch.squeeze(weight)

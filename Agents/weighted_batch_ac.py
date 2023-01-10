@@ -17,15 +17,10 @@ class WeightedBatchActorCritic(A):
                                               hidden=hidden,args=args,device=device,shared=shared,
                                                       continuous=continuous)
         if continuous:
-            self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared, device)
+            self.network = MLPGaussianActor(o_dim, n_actions, hidden, args.hidden_weight,shared, device)
         else:
-            self.network = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
-        if args.weight_activation == 'sigmoid':
-            self.weight_network = AvgDiscount_sigmoid(o_dim,hidden,args.scale_weight)
-        elif args.weight_activation == 'ReLU':
-            self.weight_network = AvgDiscount_ReLU(o_dim,hidden,args.scale_weight)
-        else:
-            self.weight_network = AvgDiscount_tanh(o_dim, hidden, args.scale_weight)
+            self.network = MLPCategoricalActor(o_dim, n_actions, hidden,args.hidden_weight, shared)
+        self.weight_network = AvgDiscount_ReLU(o_dim,args.hidden_weight,args.scale_weight)
         self.network.to(device)
         self.weight_network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
@@ -121,7 +116,7 @@ class SharedWeightedCriticBatchAC(A):
         else:
             self.network = NNCategoricalActor(o_dim, n_actions, hidden,shared)
 
-        self.weight_critic = NNGammaCritic(o_dim, hidden, args.scale_weight)
+        self.weight_critic = NNGammaCritic(o_dim, args.hidden_weight, args.scale_weight)
         self.network.to(device)
         self.weight_critic.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(), lr=lr)  #decay schedule?

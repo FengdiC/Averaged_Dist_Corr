@@ -1,39 +1,25 @@
-def random_search():
-    args = parse_args()
-    rng = np.random.RandomState(seed=args.hyp_seed)
+import numpy as np
+import os
+import torch
 
-    args.actor_alpha = rng.uniform(low=1e-4, high=1e-3)
-    args.critic_alpha = rng.uniform(low=1e-4, high=1e-2)
-    args.beta1 = rng.choice([0., 0.9])
-    args.betas = [args.beta1, 0.999]
-    args.entropy_coeff = rng.uniform(low=3e-4, high=1e-1)
-    args.gamma = rng.choice([0.9, 0.95, 0.995, 1])
-    args.l2_reg = 1e-4
-    nn_units_actor = pow(2, rng.randint(low=5, high=9))
-    nn_units_critic = pow(2, rng.randint(low=7, high=10))
+def random_search_Reacher(seed):
+    rng = np.random.RandomState(seed=seed)
+    gamma_coef = rng.randint(low=5, high=2000)/100.0
+    scale = rng.randint(low=1, high=150)
+    lr = rng.randint(low=3, high=50) / 10000.0
+    lr_weight = rng.randint(low=3, high=50)/10000.0
+    gamma = rng.choice([0.8,0.9,0.95,0.99])
+    hid = rng.choice([8,16,32,64])
+    critic_hid = rng.choice([8,16,32,64])
+    buffer = rng.choice([1,5,25,45])
 
-    args.actor_nn_params = {
-        'mlp': {
-            'hidden_sizes': [nn_units_actor, nn_units_actor],
-            'activation': "relu",
-        }
-    }
-    args.critic_nn_params = {
-        'mlp': {
-            'hidden_sizes': [nn_units_critic, nn_units_critic],
-            'activation': "relu",
-        }
-    }
+    hyperparameters = {"gamma_coef":gamma_coef, "scale":scale, "lr":lr,"hid":hid,"buffer":buffer,
+                       "lr_weight":lr_weight,"critic_hid":critic_hid,"gamma":gamma}
 
-    if args.device == 'cpu':
-        args.device = torch.device("cpu")
-    else:
-        args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return hyperparameters
 
-    # Create subfolder
-    args.work_dir = os.path.join(args.work_dir, str(args.hyp_seed))
 
-    # Torch Shenanigans fix
-    set_one_thread()
-    runner = IncrementalExpt(args)
-    runner.run()
+def set_one_thread():
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+    torch.set_num_threads(1)

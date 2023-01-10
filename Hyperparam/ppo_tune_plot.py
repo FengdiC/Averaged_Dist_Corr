@@ -13,12 +13,24 @@ def isfloat(num):
         return True
     except ValueError:
         return False
+def dummy_file():
+    for i in range(1,241,1):
+        file = './ppo_tune_results/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
+        dummy = './ppo/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
+        with open(file, 'r') as read_obj, open(dummy, 'w') as write_obj:
+            # Iterate over the given list of strings and write them to dummy file as lines
+            Lines = read_obj.readlines()
+            Lines[0] = Lines[0].replace('\n',',hyperparam2\n')
+            for line in Lines:
+                write_obj.write(line)
 
 def load_hyperparam():
-    logger.configure('./my_ppo_result/',['csv'], log_suffix='Hopper-summary-naive-ppo-tune')
-    for i in range(1,161,1):
-        file = './my_ppo_result/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
-        data = pd.read_csv(file, header=0, index_col='hyperparam')
+    logger.configure('./ppo/',['csv'], log_suffix='Hopper-summary-naive-ppo-tune')
+    for i in range(1,241,1):
+        file = './ppo/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
+        data = pd.read_csv(file, header=0,
+                           parse_dates={'timestamp': ['hyperparam','hyperparam2']},
+                           index_col='timestamp')
         data.columns = data.columns.astype(int)
         data = data.sort_index(axis=1, ascending=True)
         data = data.iloc[:, :250]
@@ -43,7 +55,7 @@ def load_hyperparam():
     return -1
 
 def compute_best():
-    data = pd.read_csv('./my_ppo_result/progressHopper-summary-weighted-ppo-tune.csv', header=0, index_col='hyperparam')
+    data = pd.read_csv('./ppo/progressHopper-summary-naive-ppo-tune.csv', header=0, index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
     data = data.iloc[:, :250]
@@ -60,7 +72,7 @@ def compute_best():
     return -1
 
 def compute_final():
-    data = pd.read_csv('./my_ppo_result/progressHopper-summary-weighted-ppo-tune.csv', header=0, index_col='hyperparam')
+    data = pd.read_csv('./ppo/progressHopper-summary-weighted-ppo-tune.csv', header=0, index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
     data = data.iloc[:, :250]
@@ -116,8 +128,9 @@ def plot_results(env):
     plt.legend()
     plt.show()
 
+# dummy_file()
 # load_hyperparam()
-compute_best()
+# compute_best()
 # compute_final()
 # param = {'env': ['Hopper-v4', 'Swimmer-v4', 'Ant-v4']}
-# plot_results('Ant-v4')
+plot_results('Swimmer-v4')

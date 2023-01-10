@@ -14,9 +14,9 @@ class BatchActorCritic(A):
                                               hidden=hidden,args=args,device=device,shared=shared,
                                               continuous=continuous)
         if continuous:
-            self.network = MLPGaussianActor(o_dim, n_actions, hidden, shared, device)
+            self.network = MLPGaussianActor(o_dim, n_actions, hidden, args.hidden_weight,shared, device)
         else:
-            self.network = MLPCategoricalActor(o_dim, n_actions, hidden, shared)
+            self.network = MLPCategoricalActor(o_dim, n_actions, hidden,args.hidden_weight, shared)
         self.network.to(device)
         self.opt = torch.optim.Adam(self.network.parameters(),lr=lr)  #decay schedule?
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=10000, gamma=0.9)

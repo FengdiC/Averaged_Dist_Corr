@@ -9,7 +9,7 @@ class DotReacher(Env):
     Action space, Discrete(8)
     Observation space, Box(2), positions
     """
-    def __init__(self,stepsize=0.4,timeout=200):
+    def __init__(self,stepsize=0.4,timeout=100):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._aval = stepsize * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]

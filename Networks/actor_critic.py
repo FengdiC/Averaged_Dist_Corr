@@ -3,7 +3,7 @@ from torch import nn
 
 
 class MLPCategoricalActor(nn.Module):
-    def __init__(self,o_dim,n_actions,hidden,shared=False):
+    def __init__(self,o_dim,n_actions,hidden,hidden_weight,shared=False):
         super(MLPCategoricalActor,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
@@ -12,10 +12,9 @@ class MLPCategoricalActor(nn.Module):
         if self.shared:
             self.critic = nn.Linear(hidden,1)
         else:
-            self.critic_body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
-                              ,nn.Linear(hidden,hidden),nn.ReLU())
-            self.critic = nn.Linear(hidden, 1)
-        
+            self.critic_body = nn.Sequential(nn.Linear(o_dim,hidden_weight),nn.ReLU()
+                              ,nn.Linear(hidden_weight,hidden_weight),nn.ReLU())
+            self.critic = nn.Linear(hidden_weight, 1)
 
     def forward(self,obs,actions):
         obs = obs.float()
@@ -45,9 +44,8 @@ class MLPCategoricalActor(nn.Module):
         dist = torch.distributions.Categorical(prob)
         return dist.probs.detach().cpu().numpy()
 
-
 class MLPGaussianActor(nn.Module):
-    def __init__(self,o_dim,a_dim,hidden,shared=False,device=None):
+    def __init__(self,o_dim,a_dim,hidden,hidden_weight,shared=False,device=None):
         super(MLPGaussianActor,self).__init__()
         self.body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
                               ,nn.Linear(hidden,hidden),nn.ReLU())
@@ -57,9 +55,9 @@ class MLPGaussianActor(nn.Module):
         if self.shared:
             self.critic = nn.Linear(hidden,1)
         else:
-            self.critic_body = nn.Sequential(nn.Linear(o_dim,hidden),nn.ReLU()
-                              ,nn.Linear(hidden,hidden),nn.ReLU())
-            self.critic = nn.Linear(hidden, 1)
+            self.critic_body = nn.Sequential(nn.Linear(o_dim,hidden_weight),nn.ReLU()
+                              ,nn.Linear(hidden_weight,hidden_weight),nn.ReLU())
+            self.critic = nn.Linear(hidden_weight, 1)
 
     def forward(self,obs,actions):
         obs = obs.float()
