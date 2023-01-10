@@ -1,15 +1,17 @@
-#! /bin/bash
-#SBATCH --account=rrg-ashique
-#SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:1
-#SBATCH --mem=32G
-#SBATCH --time=72:00:00
-#SBATCH -o /scratch/fengdic/slurm-%j.out
+#!/bin/bash
+#SBATCH --cpus-per-task=2  # Cores proportional to GPUs: 6 on Cedar, 16 on Graham.
+#SBATCH --mem=8000M       # Memory proportional to GPUs: 32000 Cedar, 64000 Graham.
+#SBATCH --time=0-1:00
+#SBATCH --output=%N-%j.out
+#SBATCH --account=def-ashique
+#SBATCH --array=1-500
 
-module load python/3.6
 source $HOME/Documents/ENV/bin/activate
+module load python/3.10
+module load mujoco mpi4py
 
-mkdir $SLURM_TMPDIR/logs/
-python PG/Components/hyperparam_tuning.py --log_dir=$SLURM_TMPDIR/logs/
+SECONDS=0
+python Hyperparam/Reacher.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/logs &
 
-cp -r $SLURM_TMPDIR/logs/ $SCRATCH/avg_discount
+echo "Baseline job $seed took $SECONDS"
+sleep 1h
