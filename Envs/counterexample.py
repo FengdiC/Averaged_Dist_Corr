@@ -262,19 +262,27 @@ def compare():
     setsizes()
     setaxes()
 
+    args = argsparser()
+    args.gamma=0.9
     agents = ['our correction','existing correction','biased']
     num_steps = 100000
     checkpoint = 20
     for agent in agents:
         if agent == 'our correction':
             color = 'tab:orange'
+            args.buffer=1
+            args.lr_weight=0.005
+            args.lr=0.5
         elif agent =='existing correction':
             color = 'tab:blue'
+            args.buffer = 8
+            args.lr = 0.95
         else:
             color = 'tab:green'
-        args = argsparser()
+            args.buffer = 8
+            args.lr = 0.95
         rets = []
-        for seed in range(2):
+        for seed in range(10):
             ret = train(args,agent,seed)
             rets.append(ret)
         rets=np.array(rets)
@@ -296,8 +304,8 @@ def compare():
 
 # tune('existing correction') #lr=0.8, buffer=20, gamma=0.99
 # tune('our correction') #lr=0.8, buffer=20 lr_weight=0.01, gamma=0.99
-tune('biased')
-# compare()
+# tune('biased')
+compare()
 
 """existing correction gamma: 0.3::: 0.95 - 0 - 1
 gamma: 0.5::: 0.95 - 0 - 1
@@ -307,4 +315,8 @@ our correction gamma: 0.3::: 0.95 - 0.008 - 1
 our correction gamma: 0.5::: 0.95 - 0.01 - 1
 our correction gamma: 0.7::: 0.95 - 0.005 - 1
 our correction gamma: 0.9::: 0.5 - 0.005 - 1
+biased gamma: 0.3 ::: 0.95-0-8
+biased gamma: 0.5 ::: 0.95-0-8
+biased gamma: 0.7 ::: 0.95-0-8
+biased gamma: 0.9 ::: 0.95-0-8
 """

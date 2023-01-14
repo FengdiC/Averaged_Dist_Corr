@@ -6,6 +6,7 @@ from Components import logger
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import itertools
 
 def isfloat(num):
     try:
@@ -14,7 +15,7 @@ def isfloat(num):
     except ValueError:
         return False
 def dummy_file():
-    for i in range(1,241,1):
+    for i in range(1,501,1):
         file = './ppo_tune_results/progressHopper-weighted-ppo-tune-'+str(i)+'.csv'
         dummy = './ppo/progressHopper-weighted-ppo-tune-'+str(i)+'.csv'
         with open(file, 'r') as read_obj, open(dummy, 'w') as write_obj:
@@ -25,25 +26,27 @@ def dummy_file():
                 write_obj.write(line)
 
 def load_hyperparam():
-    logger.configure('./ppo/',['csv'], log_suffix='Hopper-summary-weighted-ppo-tune')
-    for i in range(1,241,1):
-        file = './ppo/progressHopper-weighted-ppo-tune-'+str(i)+'.csv'
+    agent = 'batch_ac'
+    naive = True
+    # logger.configure('./Reacher_episodic/', ['csv'], log_suffix='Reacher-summary-shared-ppo-tune')
+    # logger.configure('./Reacher_episodic/',['csv'], log_suffix='Reacher-summary-weighted-ppo-tune')
+    # logger.configure('./Reacher_episodic/', ['csv'], log_suffix='Reacher-summary-biased-ppo-tune')
+    logger.configure('./Reacher_episodic/', ['csv'], log_suffix='Reacher-summary-naive-ppo-tune')
+    # param = {'agent': ['batch_ac_shared_gc', 'batch_ac', "weighted_batch_ac"], 'naive': [True, False]}
+    for i in range(1,501,1):
+        file = './Reacher_episodic/progressReacher_tune_no_repeat-'+str(i)+'.csv'
+        data = pd.read_csv(file, header=0,index_col='hyperparam')
+        hyper = data.index[3]
         data = pd.read_csv(file, header=0,
-                           parse_dates={'timestamp': ['hyperparam','hyperparam2']},
+                           parse_dates={'timestamp': ['hyperparam','agent']},
                            index_col='timestamp')
         data.columns = data.columns.astype(int)
         data = data.sort_index(axis=1, ascending=True)
-        data = data.iloc[:, :250]
-        results = []
-        for j in range(3):
-            rets = data.iloc[j,:].to_numpy()
-            rets = np.squeeze(rets)
-            results.append(rets)
-        results= np.array(results)
-        for i in reversed(range(10, results.shape[1], 1)):
-            results[:, i] = np.mean(results[:, i - 10:i + 1], axis=1)
-        mean = np.mean(results, axis=0)
-        std = np.std(results, axis=0) / np.sqrt(5)
+        data = data.iloc[:, :100]
+        name = [str(agent),str(naive)]
+        name = '-'.join(name)
+        name = hyper+' '+name
+        mean = data.loc[name].to_numpy()
         logger.logkv("hyperparam", list(data.iloc[:,1].index)[0])
         for n in range(mean.shape[0]):
             logger.logkv(str(n), mean[n])
@@ -55,12 +58,12 @@ def load_hyperparam():
     return -1
 
 def compute_best():
-    data = pd.read_csv('./ppo/progressHopper-summary-weighted-ppo-tune.csv', header=0, index_col='hyperparam')
+    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-shared-ppo-tune.csv', header=0, index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
-    data = data.iloc[:, :250]
+    data = data.iloc[:, :100]
     best = data.max(axis=1)
-    top_ten = best.nlargest(10)
+    top_ten = best.nlargest(15)
     top_ten = top_ten.index
     results = data.loc[top_ten].to_numpy()
     top_ten = list(top_ten)
@@ -71,19 +74,33 @@ def compute_best():
     plt.show()
     return -1
 
-def compute_final():
-    data = pd.read_csv('./ppo/progressHopper-summary-naive-ppo-tune.csv', header=0, index_col='hyperparam')
+def compare_best():
+    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-naive-ppo-tune.csv', header=0,
+                       index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
-    data = data.iloc[:, :250]
-    best = data.iloc[:,249]
-    top_ten = best.nlargest(10)
-    top_ten = top_ten.index
-    results = data.loc[top_ten].to_numpy()
-    top_ten = list(top_ten)
+    naive = data.loc['18.46-29-0.0046-32-5-0.0004-32-0.99-0 batch_ac_shared_gc-False-0'].to_numpy()
+    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-biased-ppo-tune.csv', header=0,
+                       index_col='hyperparam')
+    data.columns = data.columns.astype(int)
+    data = data.sort_index(axis=1, ascending=True)
+    biased = data.loc['16.14-76-0.0038-32-5-0.003-32-0.95-0 batch_ac_shared_gc-False-0'].to_numpy()
+    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-shared-ppo-tune.csv', header=0,
+                       index_col='hyperparam')
+    data.columns = data.columns.astype(int)
+    data = data.sort_index(axis=1, ascending=True)
+    shared = data.loc['11.65-6-0.0041-8-25-0.0036-64-0.95-0 batch_ac_shared_gc-False-0'].to_numpy()
+    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-weighted-ppo-tune.csv', header=0,
+                       index_col='hyperparam')
+    data.columns = data.columns.astype(int)
+    data = data.sort_index(axis=1, ascending=True)
+    data = data.iloc[:, :100]
+    weighted = data.loc['19.08-9-0.003-32-5-0.0047-16-0.95-0 batch_ac_shared_gc-False-0'].to_numpy()
     plt.figure()
-    for i in range(results.shape[0]):
-        plt.plot(range(results.shape[1]), results[i, :], label=top_ten[i])
+    plt.plot(naive,label='naive')
+    plt.plot(biased, label='biased')
+    plt.plot(shared, label='shared')
+    plt.plot(weighted, label='weighted')
     plt.legend()
     plt.title('final')
     plt.show()
@@ -130,7 +147,7 @@ def plot_results(env):
 
 # dummy_file()
 # load_hyperparam()
-# compute_best()
-compute_final()
+compute_best()
+# compare_best()
 # param = {'env': ['Hopper-v4', 'Swimmer-v4', 'Ant-v4']}
 # plot_results('Swimmer-v4')

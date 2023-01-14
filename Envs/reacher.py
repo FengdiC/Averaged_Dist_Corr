@@ -93,7 +93,7 @@ class DotReacherRepeat(Env):
     Action space, Discrete(8)
     Observation space, Box(2), positions
     """
-    def __init__(self,stepsize=0.4,timeout=1000):
+    def __init__(self,stepsize=0.4,timeout=500):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._aval = stepsize * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]
@@ -129,16 +129,16 @@ class DotReacherRepeat(Env):
         done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
         if done:
             next_obs = self._restart()
-            reward = 0
+            reward = -0.01
         else:
             self.pos = np.clip(self.pos + self._aval[int(action-1)] ,self._LB, self._UB)
             next_obs = self.pos
             # Reward
-            reward = 0
+            reward = -0.01
         # Reach goal
         done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
         if done:
-            reward = 1
+            reward = 0
 
         # Check termiation
         done = self.steps == self._timeout
