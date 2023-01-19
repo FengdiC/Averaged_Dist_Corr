@@ -129,7 +129,7 @@ for values in list(itertools.product(param['agent'], param['naive'])):
     if args.agent != 'batch_ac' and args.naive == True:
         continue
 
-    for run_seed in range(3):
+    for run_seed in range(30):
         args.seed = run_seed
         checkpoint = 200
         result = train(args)

@@ -98,30 +98,30 @@ def plot_results(env):
     biased_data = biased_data.sort_index(axis=1, ascending=True)
     biased = biased_data.loc['biased-'+env+'-mean']
     plt.plot(biased_data.columns,biased, color='blueviolet',label='biased')
-    for seed in range(10):
-        weighted_data = pd.read_csv('../Logs/PPO_tuned/progressmujoco_ppo_weighted_simple='+str(seed)+'.csv',
+    for seed in range(0,3,1):
+        weighted_data = pd.read_csv('./ppo_3_seeds/progressmujoco_ppo_weighted_simple='+str(seed)+'.csv',
                                     header=0, index_col='hyperparam')
         weighted_data.columns = weighted_data.columns.astype(int)
         weighted_data = weighted_data.sort_index(axis=1, ascending=True)
         rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
         weighted.append(rets)
     weighted = np.array(weighted)
-    for i in reversed(range(10, weighted.shape[1], 1)):
-        weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+    # for i in reversed(range(10, weighted.shape[1], 1)):
+    #     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
     mean = np.mean(weighted, axis=0)
     std = np.std(weighted, axis=0) / np.sqrt(10)
     plt.plot(weighted_data.columns,mean,color='orangered',label='our correction')
 
-    for seed in range(10):
-        naive_data = pd.read_csv('../Logs/PPO_tuned/progressmujoco_ppo_naive_tuned='+str(seed)+'.csv',
+    for seed in range(0,3,1):
+        naive_data = pd.read_csv('./ppo_3_seeds/progressmujoco_ppo_naive_tuned='+str(seed)+'.csv',
                                     header=0, index_col='hyperparam')
         naive_data.columns = naive_data.columns.astype(int)
         naive_data = naive_data.sort_index(axis=1, ascending=True)
         rets = naive_data.loc[env + '-'+str(seed)].to_numpy()
         naive.append(rets)
     naive = np.array(naive)
-    for i in reversed(range(10, naive.shape[1], 1)):
-        naive[:, i] = np.mean(naive[:, i - 10:i + 1], axis=1)
+    # for i in reversed(range(10, naive.shape[1], 1)):
+    #     naive[:, i] = np.mean(naive[:, i - 10:i + 1], axis=1)
     mean = np.mean(naive, axis=0)
     std = np.std(naive, axis=0) / np.sqrt(10)
     plt.plot(naive_data.columns,mean,color='dodgerblue',label='existing correction')
@@ -130,7 +130,7 @@ def plot_results(env):
 
 # dummy_file()
 # load_hyperparam()
-# compute_best()
-compute_final()
+compute_best()
+# compute_final()
 # param = {'env': ['Hopper-v4', 'Swimmer-v4', 'Ant-v4']}
-# plot_results('Swimmer-v4')
+# plot_results('Hopper-v4')

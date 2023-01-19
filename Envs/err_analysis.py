@@ -2,6 +2,13 @@ import random
 
 import torch
 import numpy as np
+import os
+import sys
+import inspect
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
 from Components.utils import argsparser
 import gym
 from config import agents_dict
@@ -126,6 +133,16 @@ def train(args,stepsize=0.4):
             # plt.pause(0.001)
     return avgrets,avgerr,avgerr_buffer,avgerr_ratio
 
+def test(agent,env):
+    rets= 0
+    op = env.reset()
+    r=-1
+    while r!=0:
+        a, lprob = agent.act(op)
+        obs, r, done, infos = env.step(a)
+        rets+= r
+    return rets
+
 def plot_correction(env,agent,gamma,device,policy=np.array([None,None])):
     # get the policy
     states = env.get_states()
@@ -223,34 +240,34 @@ def bias_compare(env,all_frames,d_pi,correction,est):
 
 def tune():
     args = argsparser()
-    logger.configure(args.log_dir,['csv'], log_suffix='Reacher-tanh')
+    logger.configure(args.log_dir,['csv'], log_suffix='Reacher-episodic-shared-error')
     ratio = []
     err = []
     err_buffer = []
     ret = []
     args.agent = 'batch_ac_shared_gc'
-    args.epoch_weight = 1
-    args.lr = 0.0005
-    args.lr_weight= 0.001
-    args.scale_weight = 1
-    args.buffer = 5
-    args.batch_size= 5
-    args.LAMBDA_2=1.0
+    args.buffer = 25
+    args.batch_size = 25
+    args.lr = 0.0041
+    args.lr_weight = 0.0036
+    args.scale_weight = 6
+    args.LAMBDA_2 = 11.65
+    args.gamma = 0.95
+    args.hidden = 8
+    args.hidden_weight = 64
 
     agent = ['batch_ac_shared_gc']
-    activation = ['tanh']
+    critic_hidden = [8,16,32,64]
     checkpoint = 1000
 
-    for values in list(itertools.product(agent,activation)):
+    for values in list(itertools.product(agent,critic_hidden)):
+        args.hidden_weight = values[1]
         print(values)
-        seeds = range(30)
+        seeds = range(10)
         for seed in seeds:
             args.seed = seed
             avgrets,avgerr,avgerr_buffer,avgerr_ratio = train(args,stepsize = 0.2)
-            ratio.append(np.mean(avgerr_ratio))
-            ret.append(np.mean(avgrets))
-            err.append(np.mean(avgerr))
-            err_buffer.append(np.mean(avgerr_buffer))
+            ratio.append(avgerr_ratio)
 
             name = [str(k) for k in values]
             name.append(str(seed))
@@ -273,106 +290,13 @@ def tune():
             for n in range(len(avgrets)):
                 logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
             logger.dumpkvs()
+        ratio = np.array(ratio)
+        mean = np.mean(ratio,axis=0)
+        logger.logkv("hyperparam", '-'.join(name) + '-ratio-mean')
+        for n in range(mean.shape[0]):
+            logger.logkv(str((n + 1) * checkpoint), mean[n])
+        logger.dumpkvs()
+        ratio=[]
 
-def fixed_policy_check(stepsize = 0.2):
-    # env._obs is an numpy array, while env._states is a list. But they both represent all states.
-    args = argsparser()
-    seed = args.seed
-    args.buffer=5
-    args.batch_size=5
-    args.lr = 0.005
-    args.lr_weight=0.05
-    args.scale_weight=10.0
-    args.LAMBDA_2=1
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed((seed))
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    env = DotReacherRepeat(stepsize=stepsize)
-    policy = np.zeros((len(env._states),8))
-    for i in range(len(env._states)):
-        obs = env._obs[i]
-        action = np.clip(-obs, np.array([-stepsize,-stepsize]), np.array([stepsize,stepsize]))
-        policy[i] = (env._aval[:, 0] == action[0]) & (env._aval[:, 1] == action[1])
 
-    network = agents_dict[args.agent]
-    o_dim = env.observation_space.shape[0]
-    a_dim = env.action_space.n
-    agent = network(args.lr, args.gamma, args.batch_size, o_dim, a_dim, args.hidden, args, device)
-    agent.create_buffer(env)
-
-    errs = []
-    errs_buffer = []
-    err_ratios = []
-    avgerr = []
-    avgerr_buffer = []
-    avgerr_ratio = []
-    op = env.reset()
-
-    num_steps = 20000
-    checkpoint = 1000
-    num_episode = 0
-    count = 0
-    time = 0
-    for steps in range(num_steps):
-        # does torch need expand_dims
-        action = np.clip(-np.round_(op, 2), np.array([-stepsize,-stepsize]), np.array([stepsize,stepsize])).astype(np.float32)
-        if (action==np.array([0,0])).all():
-            action = np.array([-0.2,-0.2],np.float32)
-        a = (env._aval == action).all(axis=1).nonzero()[0]+1
-        obs, r, done, infos = env.step(a)
-        a, lprob = agent.network.act(torch.from_numpy(op).to(device))
-        agent.store(op, r, done, a, lprob, time)
-
-        # Observe
-        op = obs
-        time += 1
-        count += 1
-
-        # when we compare biases from the missing discount factor and our correction approximation, should it be
-        # on all states or just states shown up in the last buffer. But anyhow, these states should be weighted
-        # according to the stationary distribution.
-        if count == agent.buffer_size:
-            all_frames = agent.buffer.all_frames()
-            _, count = agent.learn(count,obs)
-
-        if count == 0:
-            correction, d_pi = plot_correction(env, agent, args.gamma, device, policy)
-            # print("check", np.sum(correction*d_pi))
-            est = plot_est_corr(env, agent, device, correction, args)
-            err = np.matmul(d_pi, np.abs(correction - est))
-            err_ratio, err_buffer = bias_compare(env, all_frames, d_pi, correction, est)
-            errs.append(err)
-            errs_buffer.append(err_buffer)
-            err_ratios.append(err_ratio)
-
-        if done:
-            num_episode += 1
-            time = 0
-            op = env.reset()
-
-        if (steps + 1) % checkpoint == 0:
-            # plt.rcParams["figure.figsize"]
-            # gymdisplay(env,MAIN)
-
-            # print(np.matmul(d_pi,correction)) #should be close to 1
-            avgerr.append(np.mean(errs))
-            avgerr_ratio.append(np.mean(err_ratios))
-            avgerr_buffer.append(np.mean(errs_buffer))
-            rets = []
-            losses = []
-            errs = []
-            err_ratios = []
-            errs_buffer = []
-            plt.clf()
-            plt.subplot(311)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr)
-            plt.subplot(312)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr_ratio)
-            plt.subplot(313)
-            plt.plot(range(checkpoint, (steps + 1) + checkpoint, checkpoint), avgerr_buffer)
-            # plt.savefig('Hopper_hyper_graph/hopper_ppo_lr_' + floatToString(args.lr) + "_seed_" + str(
-            #     args.seed) + "_agent_" + str(args.agent)  + "_var_" + floatToString(args.var))
-            plt.pause(0.001)
-
-fixed_policy_check()
+tune()

@@ -81,12 +81,41 @@ class DotReacher(Env):
                 P[i,next_state[i,j]] += policy[i,j]
 
         terminal_idx = states.index([0,0])
-        P[terminal_idx,:] = np.ones(self.num_pt**2) / float(self.num_pt**2)
+        P[terminal_idx, :] = np.ones(self.num_pt ** 2) / float(self.num_pt ** 2)
         return P
+
+    def expected_reward(self):
+        """
+        Label states by self._states
+        Inputs: policy is a numpy of shape 25 x 8, containing softmax policies for each state
+        Outputs: expected reward of shape 25,
+        """
+        states = [[round(key,2) for key in item] for item in self._states]
+        r = -0.01*  np.ones(self.num_pt**2)
+
+        terminal_idx = states.index([0,0])
+        r[terminal_idx] = 0
+        return r
 
     def get_states(self):
         return self._obs
 
+    def q_values(self,policy,gamma):
+        """Variables: v is a vector of size 25
+        Q is a matrix of size 25*8
+        """
+        P = self.transition_matrix(policy)
+        r = self.expected_reward()
+        v = np.matmul( np.linalg.inv(np.eye(self.num_pt**2)-gamma*P), r)
+        next_value = np.matmul(P,v)
+        next_value = np.transpose(np.tile(next_value,(8,1)))
+        Q = -0.01+ next_value
+
+        states = [[round(key, 2) for key in item] for item in self._states]
+        terminal_idx = states.index([0, 0])
+        r[terminal_idx] = 0
+        Q[terminal_idx,:] +=0.01
+        return Q
 
 class DotReacherRepeat(Env):
     """
@@ -153,6 +182,36 @@ class DotReacherRepeat(Env):
     @property
     def observation_space(self):
         return spaces.Box(low=-1, high=1, shape=(2,))
+
+    def q_values(self,policy,gamma):
+        """Variables: v is a vector of size 25
+        Q is a matrix of size 25*8
+        """
+        P = self.transition_matrix(policy)
+        r = self.expected_reward()
+        v = np.matmul( np.linalg.inv(np.eye(self.num_pt**2)-gamma*P), r)
+        next_value = np.matmul(P,v)
+        next_value = np.transpose(np.tile(next_value,(8,1)))
+        Q = -0.01+ next_value
+
+        states = [[round(key, 2) for key in item] for item in self._states]
+        terminal_idx = states.index([0, 0])
+        r[terminal_idx] = 0
+        Q[terminal_idx,:] +=0.01
+        return Q
+
+    def expected_reward(self):
+        """
+        Label states by self._states
+        Inputs: policy is a numpy of shape 25 x 8, containing softmax policies for each state
+        Outputs: expected reward of shape 25,
+        """
+        states = [[round(key,2) for key in item] for item in self._states]
+        r = -0.01*  np.ones(self.num_pt**2)
+
+        terminal_idx = states.index([0,0])
+        r[terminal_idx] = 0
+        return r
 
     def transition_matrix(self,policy):
         """

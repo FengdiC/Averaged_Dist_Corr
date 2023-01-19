@@ -26,15 +26,15 @@ def dummy_file():
                 write_obj.write(line)
 
 def load_hyperparam():
-    agent = 'batch_ac'
-    naive = True
-    # logger.configure('./Reacher_episodic/', ['csv'], log_suffix='Reacher-summary-shared-ppo-tune')
-    # logger.configure('./Reacher_episodic/',['csv'], log_suffix='Reacher-summary-weighted-ppo-tune')
-    # logger.configure('./Reacher_episodic/', ['csv'], log_suffix='Reacher-summary-biased-ppo-tune')
-    logger.configure('./Reacher_episodic/', ['csv'], log_suffix='Reacher-summary-naive-ppo-tune')
+    agent = 'weighted_batch_ac'
+    naive = False
+    # logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-shared-ppo-tune')
+    logger.configure('./Reacher_repeated/',['csv'], log_suffix='Reacher-summary-weighted-ppo-tune')
+    # logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-biased-ppo-tune')
+    # logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-naive-ppo-tune')
     # param = {'agent': ['batch_ac_shared_gc', 'batch_ac', "weighted_batch_ac"], 'naive': [True, False]}
     for i in range(1,501,1):
-        file = './Reacher_episodic/progressReacher_tune_no_repeat-'+str(i)+'.csv'
+        file = './Reacher_repeated/progressReacher_tune_no_repeat-'+str(i)+'.csv'
         data = pd.read_csv(file, header=0,index_col='hyperparam')
         hyper = data.index[3]
         data = pd.read_csv(file, header=0,
@@ -58,12 +58,13 @@ def load_hyperparam():
     return -1
 
 def compute_best():
-    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-shared-ppo-tune.csv', header=0, index_col='hyperparam')
+    data = pd.read_csv('./Reacher_repeated/progressReacher-summary-naive-ppo-tune.csv', header=0, index_col='hyperparam')
     data.columns = data.columns.astype(int)
+    data = data.dropna(axis=1, how='all')
     data = data.sort_index(axis=1, ascending=True)
     data = data.iloc[:, :100]
     best = data.max(axis=1)
-    top_ten = best.nlargest(15)
+    top_ten = best.nlargest(2)
     top_ten = top_ten.index
     results = data.loc[top_ten].to_numpy()
     top_ten = list(top_ten)
@@ -75,22 +76,22 @@ def compute_best():
     return -1
 
 def compare_best():
-    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-naive-ppo-tune.csv', header=0,
+    data = pd.read_csv('./Reacher_repeated/progressReacher-summary-naive-ppo-tune.csv', header=0,
                        index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
     naive = data.loc['18.46-29-0.0046-32-5-0.0004-32-0.99-0 batch_ac_shared_gc-False-0'].to_numpy()
-    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-biased-ppo-tune.csv', header=0,
+    data = pd.read_csv('./Reacher_repeated/progressReacher-summary-biased-ppo-tune.csv', header=0,
                        index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
     biased = data.loc['16.14-76-0.0038-32-5-0.003-32-0.95-0 batch_ac_shared_gc-False-0'].to_numpy()
-    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-shared-ppo-tune.csv', header=0,
+    data = pd.read_csv('./Reacher_repeated/progressReacher-summary-shared-ppo-tune.csv', header=0,
                        index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
     shared = data.loc['11.65-6-0.0041-8-25-0.0036-64-0.95-0 batch_ac_shared_gc-False-0'].to_numpy()
-    data = pd.read_csv('./Reacher_episodic/progressReacher-summary-weighted-ppo-tune.csv', header=0,
+    data = pd.read_csv('./Reacher_repeated/progressReacher-summary-weighted-ppo-tune.csv', header=0,
                        index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)

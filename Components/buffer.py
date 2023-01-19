@@ -64,6 +64,9 @@ class Buffer(A):
     def all_frames(self):
         return self.frames[:self.size]
 
+    def all_info(self):
+        return self.frames[:self.current_size], self.actions[:self.current_size], self.times[:self.current_size]
+
     def compute_gae(self,values):
         self.values=values
 

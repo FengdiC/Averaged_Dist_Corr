@@ -150,14 +150,17 @@ class SharedWeightedCriticBatchAC(A):
         (self.closs + self.wloss).backward()
         self.weight_critic_opt.step()
 
-    def create_buffer(self,env):
+    def create_buffer(self,env,buffer=None):
         # Create the buffer
-        self.buffer_size=self.args.buffer
+        if buffer==None:
+            self.buffer_size=self.args.buffer
+        else:
+            self.buffer_size = buffer
         o_dim = env.observation_space.shape[0]
         n_actions = 0
         if self.continuous:
             n_actions = env.action_space.shape[0]
-        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, n_actions, self.args.buffer)
+        self.buffer = Buffer(self.args.gamma,self.args.lam, o_dim, n_actions, self.buffer_size)
         
     def act(self,op):
         a, lprob = self.network.act(torch.from_numpy(op).to(self.device)  )
