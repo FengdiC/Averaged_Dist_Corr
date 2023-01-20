@@ -63,9 +63,9 @@ def emphasis(agent,V,env,frames,actions,times,device,gamma,closs_weight,scale_we
 
     counts /= frames.shape[0]
     # # compared with discounted state distribution
-    # shared = counts * weights.detach().numpy()/scale_weight *(1-gamma) * timeout
+    # shared = counts * weights.detach().numpy()/scale_weight
     # biased = counts
-    # naive = naive * counts *(1-gamma) * timeout
+    # naive = naive * counts
 
     # compare the state distribution ratio
     shared = weights.detach().numpy() / scale_weight *(1-gamma) * timeout
@@ -79,7 +79,7 @@ def emphasis(agent,V,env,frames,actions,times,device,gamma,closs_weight,scale_we
             continue
         idx = np.where(indices==i)
 
-        # values = gamma**np.array(times[idx]) *counts[i] *(1-gamma) * timeout
+        # values = gamma**np.array(times[idx]) *counts[i]
 
         values = gamma ** np.array(times[idx]) * (1-gamma) * timeout
         if np.abs(np.mean(values) - naive[i])>0.001:
@@ -210,7 +210,7 @@ def fixed_policy_check(stepsize = 0.2):
 
     op = env.reset()
     # run an agent for a random steps
-    num_steps = 10000
+    num_steps = 9500
     num_episode = 0
     count = 0
     time = 0
@@ -236,7 +236,9 @@ def fixed_policy_check(stepsize = 0.2):
 
     # compute the true gradient: requiring discounted state distribution, q-values and log-grad of policies
     corr,d_pi = compute_stat_dist(env,agent,args.gamma,device)
+    print("corr: ",corr)
     d_pi_gamma = corr* d_pi
+    print(np.sum(d_pi),"::should equal one")
     Q = env.q_values(policy,args.gamma)
     V = np.sum(Q * policy,axis=1)
     # log_probs = log_prob_for_all(states,agent,device)
@@ -254,7 +256,7 @@ def fixed_policy_check(stepsize = 0.2):
     for seed in range(10):
         # initial data buffers for 10 random seeds
         buffers.append(Buffer(args.gamma, args.lam, o_dim, 0, args.buffer))
-    checkpoint= 25
+    checkpoint= 50
     """
     mean-dist for all three should be a matric of size |seeds| x D x |S|
     var-dist for naive only is a matric of size |seeds| x D x |S|
@@ -335,13 +337,12 @@ def fixed_policy_check(stepsize = 0.2):
     naive_bias = np.sum(weight * (naive_mean - weight) ** 2, axis=1)
 
 
-    plt.figure()
+    plt.subplot(121)
     plt.plot(range(shared_bias.shape[0]),shared_bias,label='shared')
     plt.plot(range(shared_bias.shape[0]), naive_bias, label='naive')
     plt.plot(range(shared_bias.shape[0]), biased_bias, label='biased')
     plt.legend()
-    plt.show()
-    plt.figure()
+    plt.subplot(122)
     plt.plot(range(shared_bias.shape[0]), shared_var, label='shared')
     plt.plot(range(shared_bias.shape[0]), naive_var, label='naive')
     plt.plot(range(shared_bias.shape[0]), biased_var, label='biased')

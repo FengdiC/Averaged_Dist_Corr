@@ -14,9 +14,9 @@ def isfloat(num):
     except ValueError:
         return False
 def dummy_file():
-    for i in range(1,241,1):
-        file = './ppo_tune_results/progressHopper-weighted-ppo-tune-'+str(i)+'.csv'
-        dummy = './ppo/progressHopper-weighted-ppo-tune-'+str(i)+'.csv'
+    for i in range(1,501,1):
+        file = './ppo_tune_results/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
+        dummy = './ppo/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
         with open(file, 'r') as read_obj, open(dummy, 'w') as write_obj:
             # Iterate over the given list of strings and write them to dummy file as lines
             Lines = read_obj.readlines()
@@ -25,9 +25,9 @@ def dummy_file():
                 write_obj.write(line)
 
 def load_hyperparam():
-    logger.configure('./ppo/',['csv'], log_suffix='Hopper-summary-weighted-ppo-tune')
-    for i in range(1,241,1):
-        file = './ppo/progressHopper-weighted-ppo-tune-'+str(i)+'.csv'
+    logger.configure('./ppo/',['csv'], log_suffix='Hopper-summary-naive-ppo-tune')
+    for i in range(1,501,1):
+        file = './ppo/progressHopper-naive-ppo-tune-'+str(i)+'.csv'
         data = pd.read_csv(file, header=0,
                            parse_dates={'timestamp': ['hyperparam','hyperparam2']},
                            index_col='timestamp')
@@ -35,16 +35,18 @@ def load_hyperparam():
         data = data.sort_index(axis=1, ascending=True)
         data = data.iloc[:, :250]
         results = []
-        for j in range(3):
+        if data.shape[0]<20:
+            continue
+        for j in range(20):
             rets = data.iloc[j,:].to_numpy()
             rets = np.squeeze(rets)
             results.append(rets)
         results= np.array(results)
-        for i in reversed(range(10, results.shape[1], 1)):
-            results[:, i] = np.mean(results[:, i - 10:i + 1], axis=1)
+        # for i in reversed(range(10, results.shape[1], 1)):
+        #     results[:, i] = np.mean(results[:, i - 10:i + 1], axis=1)
         mean = np.mean(results, axis=0)
         std = np.std(results, axis=0) / np.sqrt(5)
-        logger.logkv("hyperparam", list(data.iloc[:,1].index)[0])
+        logger.logkv("hyperparam", list(data.iloc[:,1].index)[0]+'-'+str(i))
         for n in range(mean.shape[0]):
             logger.logkv(str(n), mean[n])
         logger.dumpkvs()
@@ -55,12 +57,12 @@ def load_hyperparam():
     return -1
 
 def compute_best():
-    data = pd.read_csv('./ppo/progressHopper-summary-weighted-ppo-tune.csv', header=0, index_col='hyperparam')
+    data = pd.read_csv('./ppo/progressHopper-summary-naive-ppo-tune.csv', header=0, index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.sort_index(axis=1, ascending=True)
     data = data.iloc[:, :250]
     best = data.max(axis=1)
-    top_ten = best.nlargest(10)
+    top_ten = best.nlargest(5)
     top_ten = top_ten.index
     results = data.loc[top_ten].to_numpy()
     top_ten = list(top_ten)
@@ -98,8 +100,8 @@ def plot_results(env):
     biased_data = biased_data.sort_index(axis=1, ascending=True)
     biased = biased_data.loc['biased-'+env+'-mean']
     plt.plot(biased_data.columns,biased, color='blueviolet',label='biased')
-    for seed in range(0,3,1):
-        weighted_data = pd.read_csv('./ppo_3_seeds/progressmujoco_ppo_weighted_simple='+str(seed)+'.csv',
+    for seed in range(1213,1223,1):
+        weighted_data = pd.read_csv('./ppo_run/progressmujoco_ppo_weighted_simple='+str(seed)+'.csv',
                                     header=0, index_col='hyperparam')
         weighted_data.columns = weighted_data.columns.astype(int)
         weighted_data = weighted_data.sort_index(axis=1, ascending=True)
@@ -112,8 +114,8 @@ def plot_results(env):
     std = np.std(weighted, axis=0) / np.sqrt(10)
     plt.plot(weighted_data.columns,mean,color='orangered',label='our correction')
 
-    for seed in range(0,3,1):
-        naive_data = pd.read_csv('./ppo_3_seeds/progressmujoco_ppo_naive_tuned='+str(seed)+'.csv',
+    for seed in range(1213,1223,1):
+        naive_data = pd.read_csv('./ppo_run/progressmujoco_ppo_naive_tuned='+str(seed)+'.csv',
                                     header=0, index_col='hyperparam')
         naive_data.columns = naive_data.columns.astype(int)
         naive_data = naive_data.sort_index(axis=1, ascending=True)
@@ -133,4 +135,4 @@ def plot_results(env):
 compute_best()
 # compute_final()
 # param = {'env': ['Hopper-v4', 'Swimmer-v4', 'Ant-v4']}
-# plot_results('Hopper-v4')
+# plot_results('Ant-v4')

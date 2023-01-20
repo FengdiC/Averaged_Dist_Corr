@@ -24,8 +24,8 @@ def train(args,stepsize=0.2):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed((seed))
-    env = DotReacherRepeat(stepsize=stepsize)
-    # env = DotReacher(stepsize=stepsize)
+    # env = DotReacherRepeat(stepsize=stepsize)
+    env = DotReacher(stepsize=stepsize)
     o_dim = env.observation_space.shape[0]
     if args.continuous:
         a_dim= env.action_space.shape[0]
