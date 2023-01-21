@@ -26,17 +26,18 @@ def dummy_file():
                 write_obj.write(line)
 
 def load_hyperparam():
-    agent = 'weighted_batch_ac'
+    agent = 'batch_ac_shared_gc'
     naive = False
-    # logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-shared-ppo-tune')
-    logger.configure('./Reacher_repeated/',['csv'], log_suffix='Reacher-summary-weighted-ppo-tune')
+    print(agent,naive)
+    logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-shared-ppo-tune')
+    # logger.configure('./Reacher_repeated/',['csv'], log_suffix='Reacher-summary-weighted-ppo-tune')
     # logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-biased-ppo-tune')
     # logger.configure('./Reacher_repeated/', ['csv'], log_suffix='Reacher-summary-naive-ppo-tune')
     # param = {'agent': ['batch_ac_shared_gc', 'batch_ac', "weighted_batch_ac"], 'naive': [True, False]}
     for i in range(1,501,1):
         file = './Reacher_repeated/progressReacher_tune_no_repeat-'+str(i)+'.csv'
         data = pd.read_csv(file, header=0,index_col='hyperparam')
-        hyper = data.index[3]
+        hyper = data.index[30]
         data = pd.read_csv(file, header=0,
                            parse_dates={'timestamp': ['hyperparam','agent']},
                            index_col='timestamp')
@@ -58,13 +59,15 @@ def load_hyperparam():
     return -1
 
 def compute_best():
-    data = pd.read_csv('./Reacher_repeated/progressReacher-summary-naive-ppo-tune.csv', header=0, index_col='hyperparam')
+    file = './Reacher_repeated/progressReacher-summary-naive-ppo-tune.csv'
+    print(file)
+    data = pd.read_csv(file, header=0, index_col='hyperparam')
     data.columns = data.columns.astype(int)
     data = data.dropna(axis=1, how='all')
     data = data.sort_index(axis=1, ascending=True)
     data = data.iloc[:, :100]
     best = data.max(axis=1)
-    top_ten = best.nlargest(2)
+    top_ten = best.nlargest(5)
     top_ten = top_ten.index
     results = data.loc[top_ten].to_numpy()
     top_ten = list(top_ten)

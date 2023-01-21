@@ -56,7 +56,7 @@ def train(args,env,stepsize=0.2):
     avgerr_ratio = []
     op = env.reset()
 
-    num_steps = 10000
+    num_steps = 60000
     checkpoint = 1000
     num_episode = 0
     count = 0
@@ -109,6 +109,7 @@ def test(agent,env):
 
 param = {'agent': ['batch_ac_shared_gc', 'batch_ac',"weighted_batch_ac"], 'naive': [True, False]}
 args = utils.argsparser()
+plt.figure()
 
 for values in list(itertools.product(param['agent'], param['naive'])):
     args.agent = values[0]
@@ -142,6 +143,8 @@ for values in list(itertools.product(param['agent'], param['naive'])):
         returns.append(rets)
     returns = np.array(returns)
     plt.plot(range(returns.shape[1]),np.mean(returns,axis=0),label='repeated-'+name)
+    plt.show(block=False)
+    plt.pause(0.02)
 
     env = DotReacher(stepsize=0.2)
     hyperparam = episodic[name]
@@ -164,6 +167,8 @@ for values in list(itertools.product(param['agent'], param['naive'])):
         returns.append(rets)
     returns = np.array(returns)
     plt.plot(range(returns.shape[1]), np.mean(returns, axis=0), label='episodic-' + name)
+    plt.show(block=False)
+    plt.pause(0.02)
 
 plt.legend()
 plt.show()

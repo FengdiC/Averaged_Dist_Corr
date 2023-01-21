@@ -59,7 +59,7 @@ def train(args,stepsize=0.4):
     avgerr_ratio = []
     op = env.reset()
 
-    num_steps = 20000
+    num_steps = 40000
     checkpoint = 1000
     num_episode = 0
     count = 0
@@ -198,10 +198,10 @@ def plot_est_corr(env,agent,device,correction,args):
     # get the weights
     states = env.get_states()
     if args.agent == 'weighted_batch_ac':
-        weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy()
+        weights = agent.weight_network.forward(torch.from_numpy(states).to(device)).detach().cpu().numpy()/args.scale_weight
     else:
         _, weights = agent.weight_critic.forward(torch.from_numpy(states).to(device))
-        weights = weights.detach().cpu().numpy()
+        weights = weights.detach().cpu().numpy()/args.scale_weight
 
     # # plot heatmap
     # data = pd.DataFrame(data={'x': states[:, 0], 'y': states[:, 1], 'z': np.squeeze(weights)})
@@ -217,7 +217,7 @@ def plot_est_corr(env,agent,device,correction,args):
     # ax.set_ylabel('y')
     # ax.set_zlabel('difference')
     # plt.show()
-    return weights
+    return weights * (1-args.gamma) * 500
 
 def bias_compare(env,all_frames,d_pi,correction,est):
     ## this method counts the number of times of each state shown in one buffer.
@@ -240,19 +240,11 @@ def bias_compare(env,all_frames,d_pi,correction,est):
 
 def tune():
     args = argsparser()
-    logger.configure(args.log_dir,['csv'], log_suffix='Reacher-episodic-shared-error')
+    logger.configure(args.log_dir,['csv'], log_suffix='Reacher-repeated-shared')
     ratio = []
-    err = []
-    err_buffer = []
-    ret = []
     args.agent = 'batch_ac_shared_gc'
-    args.buffer = 25
-    args.batch_size = 25
-    args.lr = 0.0041
-    args.lr_weight = 0.0036
-    args.scale_weight = 6
-    args.LAMBDA_2 = 11.65
-    args.gamma = 0.95
+    param = {'buffer':[1,5,25,45],'lr':[0.001,0.004,0.008],'lr_weight':[0.0003,0.007,0.001,0.004],
+             'LAMBDA_2':[1,10],'scale_weight':[1,10,50,100],'gamma':[0.8,0.9,0.95,0.99]}
     args.hidden = 8
     args.hidden_weight = 64
 
@@ -260,9 +252,15 @@ def tune():
     critic_hidden = [8,16,32,64]
     checkpoint = 1000
 
-    for values in list(itertools.product(agent,critic_hidden)):
-        args.hidden_weight = values[1]
-        print(values)
+    for values in list(itertools.product(param['buffer'],param['lr'],param['lr_weight'],param['scale_weight'],
+                                         param['LAMBDA_2'],param['gamma'])):
+        args.buffer = values[0]
+        args.batch_size = values[0]
+        args.lr = values[1]
+        args.lr_weight = values[2]
+        args.scale_weight = values[4]
+        args.LAMBDA_2 = values[3]
+        args.gamma = values[5]
         seeds = range(10)
         for seed in seeds:
             args.seed = seed
@@ -276,20 +274,11 @@ def tune():
                 logger.logkv(str((n + 1) * checkpoint), avgrets[n])
             logger.dumpkvs()
 
-            logger.logkv("hyperparam", '-'.join(name)+'-errs')
-            for n in range(len(avgrets)):
-                logger.logkv(str((n + 1) * checkpoint), avgerr[n])
-            logger.dumpkvs()
-
             logger.logkv("hyperparam", '-'.join(name)+'-err-ratios')
             for n in range(len(avgrets)):
                 logger.logkv(str((n + 1) * checkpoint), avgerr_ratio[n])
             logger.dumpkvs()
 
-            logger.logkv("hyperparam", '-'.join(name)+'-errs-buffer')
-            for n in range(len(avgrets)):
-                logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
-            logger.dumpkvs()
         ratio = np.array(ratio)
         mean = np.mean(ratio,axis=0)
         logger.logkv("hyperparam", '-'.join(name) + '-ratio-mean')
