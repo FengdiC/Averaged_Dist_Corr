@@ -4,7 +4,7 @@
 #SBATCH --time=0-24:00
 #SBATCH --output=%N-%j.out
 #SBATCH --account=def-ashique
-#SBATCH --array=1-500
+#SBATCH --array=1-300
 
 module load python/3.10
 source $HOME/Documents/ENV/bin/activate
