@@ -64,24 +64,25 @@ def emphasis(agent,V,env,frames,actions,times,device,gamma,closs_weight,scale_we
         mean-dist of size |S| to be stored in a matric of size |seeds| x |S| x D
         var-dist of size |S| to be stored in a matric of size |seeds| x |S| x D
         """
-    # # update the weight for the critic
-    # states = [[round(key, 2) for key in item] for item in env._states]
-    # q_values = np.zeros(frames.shape[0])
-    # for i in range(frames.shape[0]):
-    #     frame = np.around(frames[i], 2)
-    #     idx = states.index(frame.tolist())
-    #     q_values[i] = V[idx]
-    # new_lprobs, _ = agent.network.forward(torch.from_numpy(frames).to(device),
-    #                                       torch.from_numpy(actions).to(device))
-    # # compute shared gradient
-    # values, weights = agent.weight_critic(torch.from_numpy(frames).to(device))
-    # closs = closs_weight * torch.mean((torch.from_numpy(q_values).to(device) - values) ** 2)
-    # ## Weight
-    # labels = gamma ** times
-    # wloss = torch.mean((torch.from_numpy(labels).to(device) * scale_weight - weights) ** 2)
-    # agent.weight_critic_opt.zero_grad()
-    # (closs + wloss).backward()
-    # agent.weight_critic_opt.step()
+    # for epoch in range(10):
+    #     # update the weight for the critic
+    #     states = [[round(key, 2) for key in item] for item in env._states]
+    #     q_values = np.zeros(frames.shape[0])
+    #     for i in range(frames.shape[0]):
+    #         frame = np.around(frames[i], 2)
+    #         idx = states.index(frame.tolist())
+    #         q_values[i] = V[idx]
+    #     new_lprobs, _ = agent.network.forward(torch.from_numpy(frames).to(device),
+    #                                           torch.from_numpy(actions).to(device))
+    #     # compute shared gradient
+    #     values, weights = agent.weight_critic(torch.from_numpy(frames).to(device))
+    #     closs = closs_weight * torch.mean((torch.from_numpy(q_values).to(device) - values) ** 2)
+    #     ## Weight
+    #     labels = gamma ** times
+    #     wloss = torch.mean((torch.from_numpy(labels).to(device) * scale_weight - weights) ** 2)
+    #     agent.weight_critic_opt.zero_grad()
+    #     (closs + wloss).backward()
+    #     agent.weight_critic_opt.step()
 
 
     indices = np.zeros(frames.shape[0])
@@ -220,8 +221,8 @@ def fixed_policy_check(stepsize = 0.2):
     args.batch_size = 25
     args.lr = 0.0042
     args.lr_weight = 0.0005
-    args.scale_weight =143
-    args.LAMBDA_2 = 18.94
+    args.scale_weight =142
+    args.LAMBDA_2 = 19.94
     args.gamma = 0.99
     args.hidden = 8
     args.hidden_weight = 64
@@ -246,7 +247,7 @@ def fixed_policy_check(stepsize = 0.2):
 
     op = env.reset()
     # run an agent for a random steps
-    num_steps = 40000
+    num_steps = 20000
     num_episode = 0
     count = 0
     time = 0
@@ -285,7 +286,7 @@ def fixed_policy_check(stepsize = 0.2):
             # compute the true gradient: requiring discounted state distribution, q-values and log-grad of policies
             corr,d_pi = compute_stat_dist(env,agent,args.gamma,device)
             d_pi_gamma = corr* d_pi
-            print(np.sum(d_pi),"::should equal one")
+            print(np.sum(d_pi_gamma),"::should equal one")
             Q = env.q_values(policy,args.gamma)
             V = np.sum(Q * policy,axis=1)
             # log_probs = log_prob_for_all(states,agent,device)
@@ -299,11 +300,11 @@ def fixed_policy_check(stepsize = 0.2):
 
             # set the total number of samples I would like to use
             buffers = []
-            args.buffer = 25
-            for seed in range(10):
+            args.buffer = 200
+            for seed in range(80):
                 # initial data buffers for 10 random seeds
                 buffers.append(Buffer(args.gamma, args.lam, o_dim, 0, args.buffer))
-            checkpoint= 24
+            checkpoint= 199
             """
             mean-dist for all three should be a matric of size |seeds| x D x |S|
             var-dist for naive only is a matric of size |seeds| x D x |S|
@@ -337,17 +338,19 @@ def fixed_policy_check(stepsize = 0.2):
             shared = np.array(shared_mean_per_step)
             print(shared.shape)
             biased = np.array(biased_mean_per_step)
-            weight = biased
+            weight = np.mean(biased,axis=0)
 
             shared_mean_per_step = np.mean(shared, axis=0)
-            shared_bias.append( np.sum(weight * (shared_mean_per_step - d_pi_gamma) ** 2) )
+            shared_bias.append( np.sum(weight * (shared_mean_per_step - d_pi_gamma) ** 2))
             # print(np.var(shared, axis=0))
             shared_var.append( np.sum(weight * np.var(shared, axis=0)) )
 
             biased = np.array(biased_mean_per_step)
             biased_mean_per_step = np.mean(biased, axis=0)
             biased_bias.append( np.sum(weight * (biased_mean_per_step - d_pi_gamma) ** 2) )
+            print('ratio: ',shared_bias[-1]/biased_bias[-1])
             biased_var.append( np.sum(weight * np.var(biased, axis=0)) )
+            print('var ratio: ',shared_var[-1]/biased_var[-1])
 
             naive = np.array(naive_mean_per_step)
             naive_var_per_step = np.array(naive_var_per_step)
@@ -389,29 +392,31 @@ def fixed_policy_check(stepsize = 0.2):
                         hspace=0.4)
 
     plt.subplot(121)
-    plt.plot(range(0,checkpoint*shared_bias.shape[0],checkpoint),shared_bias,label='our correction',color = 'tab:orange')
-    plt.plot(range(0,checkpoint*shared_bias.shape[0],checkpoint), naive_bias, label='existing correction',color = 'tab:blue')
-    plt.plot(range(0,checkpoint*shared_bias.shape[0],checkpoint), biased_bias, label='biased',color = 'tab:green')
+    plt.plot(range(0,plotpoint*shared_bias.shape[0],plotpoint),shared_bias,label='our correction',color = 'tab:orange')
+    plt.plot(range(0,plotpoint*shared_bias.shape[0],plotpoint), naive_bias, label='existing correction',color = 'tab:blue')
+    plt.plot(range(0,plotpoint*shared_bias.shape[0],plotpoint), biased_bias, label='biased',color = 'tab:green')
     plt.legend(prop={"size": 17})
     plt.xlabel("number of samples", fontsize=19)
     plt.ylabel("squared error of estimated state distribution ratios", fontsize=19)
     plt.yticks(fontsize=17)
     plt.xticks(fontsize=17, rotation=45)
     plt.title("Bias of the state emphasis", fontsize=19)
+    plt.xlim(0, 20500)
     setaxes()
 
     plt.subplot(122)
-    plt.plot(range(0,checkpoint*shared_bias.shape[0],checkpoint), shared_var, label='our correction',color = 'tab:orange')
-    plt.plot(range(0,checkpoint*shared_bias.shape[0],checkpoint), naive_var, label='existing correction',color = 'tab:blue')
-    plt.plot(range(0,checkpoint*shared_bias.shape[0],checkpoint), biased_var, label='biased',color = 'tab:green')
+    plt.plot(range(0,plotpoint*shared_bias.shape[0],plotpoint), shared_var, label='our correction',color = 'tab:orange')
+    plt.plot(range(0,plotpoint*shared_bias.shape[0],plotpoint), naive_var, label='existing correction',color = 'tab:blue')
+    plt.plot(range(0,plotpoint*shared_bias.shape[0],plotpoint), biased_var, label='biased',color = 'tab:green')
     plt.legend(prop={"size": 17})
     plt.xlabel("number of samples", fontsize=19)
     plt.ylabel("variance of estimated state distribution ratios", fontsize=19)
     plt.yticks(fontsize=17)
     plt.xticks(fontsize=17, rotation=45)
     plt.title("Variance of the state emphasis", fontsize=19)
+    plt.xlim(0,20500)
     setaxes()
     plt.show()
     plt.pause(0.01)
 
-fixed_policy_check()
+# fixed_policy_check()

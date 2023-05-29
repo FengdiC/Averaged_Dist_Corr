@@ -39,437 +39,274 @@ def setaxes():
     # for tick in ax.yaxis.get_major_ticks():
     #     tick.label.set_fontsize(ax.getxticklabelsize())
 
-data = pd.read_csv('./logs/PPO/mujoco-PPO-Ho-An-Ha.csv', header=0, index_col='hyperparam')
-data.columns = data.columns.astype(int)
-data = data.sort_index(axis=1, ascending=True)
-data = data.iloc[:,:500]
 # 10, 6
-plt.figure(figsize=(25,12), dpi=60)
+plt.figure(figsize=(25,6), dpi=60)
 setaxes()
 setsizes()
-plt.subplot(241)
 
-param = {'agent': ['biased', 'naive','ours40'],'env': ['Hopper-v4']}
+plt.subplot(141)
 
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
+for seed in range(1):
+    biased_data = pd.read_csv('./ppo_tune/ant/progressbiased-ppo-tune-16.csv',
+                              header=0,
+                              parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                              index_col='timestamp')
+    biased_data.columns = biased_data.columns.astype(int)
+    biased_data = biased_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+biased = biased_data.to_numpy()
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(biased, axis=0)
+std = np.std(biased, axis=0) / np.sqrt(10)
+print("biased: ", biased.shape[0])
+plt.plot(biased_data.columns, mean, color='tab:green', label='biased')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:green', alpha=0.2, linewidth=0.9)
 
-    if values[0] == 'ours40':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours60':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
+for seed in range(1):
+    weighted_data = pd.read_csv('./ppo_tune/ant/progressweighted-ppo-tune-790.csv',
+                                header=0,
+                                parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                                index_col='timestamp')
+    weighted_data.columns = weighted_data.columns.astype(int)
+    weighted_data = weighted_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+weighted = weighted_data.to_numpy()
+print("weighted: ", weighted.shape[0])
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(weighted, axis=0)
+std = np.std(weighted, axis=0) / np.sqrt(10)
+plt.plot(weighted_data.columns, mean, color='tab:orange', label='our correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:orange', alpha=0.2, linewidth=0.9)
 
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0) /np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color,alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-
-# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
-
-# define y_axis, x_axis
-plt.xlabel("steps")
-plt.ylabel("Undiscounted Returns")
-setaxes()
-plt.title('Hopper')
-# set legend
-# plt.legend()
-
-plt.subplot(242)
-
-param = {'agent': ['biased', 'naive','ours60'],'env': ['Ant-v4']}
-
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
-
-    if values[0] == 'ours60':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours40':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0) /np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color, alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-
-# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
+for seed in range(1):
+    naive_data = pd.read_csv('./ppo_tune/ant/progressnaive-ppo-tune-790.csv',
+                             header=0,
+                             parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                             index_col='timestamp')
+    naive_data.columns = naive_data.columns.astype(int)
+    naive_data = naive_data.sort_index(axis=1, ascending=True)
+    # rets = naive_data.loc[env + '-'+str(seed)].to_numpy()
+    # naive.append(rets)
+naive = naive_data.to_numpy()
+print("naive: ", naive.shape[0])
+# for i in reversed(range(10, naive.shape[1], 1)):
+#     naive[:, i] = np.mean(naive[:, i - 10:i + 1], axis=1)
+mean = np.mean(naive, axis=0)
+std = np.std(naive, axis=0) / np.sqrt(10)
+plt.plot(naive_data.columns, mean, color='tab:blue', label='existing correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:blue', alpha=0.2, linewidth=0.9)
 
 # define y_axis, x_axis
 plt.xlabel("steps")
 plt.ylabel("Undiscounted Returns")
 setaxes()
+# define y_axis, x_axis
+setsizes()
+plt.xticks(fontsize=17, rotation=45)
+plt.yticks(fontsize=17)
 plt.title('Ant')
-# set legend
-# plt.legend()
 
-plt.subplot(243)
+plt.subplot(142)
 
-param = {'agent': ['biased', 'naive','ours60'],'env': ['HalfCheetah-v4']}
+for seed in range(1):
+    biased_data = pd.read_csv('./ppo_tune/halfcheetah/progressbiased-ppo-tune-280.csv',
+                              header=0,
+                              parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                              index_col='timestamp')
+    biased_data.columns = biased_data.columns.astype(int)
+    biased_data = biased_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+biased = biased_data.to_numpy()
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(biased, axis=0)
+std = np.std(biased, axis=0) / np.sqrt(10)
+print("biased: ", biased.shape[0])
+plt.plot(biased_data.columns, mean, color='tab:green', label='biased')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:green', alpha=0.2, linewidth=0.9)
 
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
+for seed in range(1):
+    weighted_data = pd.read_csv('./ppo_tune/halfcheetah/progressweighted-ppo-tune-556.csv',
+                                header=0,
+                                parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                                index_col='timestamp')
+    weighted_data.columns = weighted_data.columns.astype(int)
+    weighted_data = weighted_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+weighted = weighted_data.to_numpy()
+print("weighted: ", weighted.shape[0])
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(weighted, axis=0)
+std = np.std(weighted, axis=0) / np.sqrt(10)
+plt.plot(weighted_data.columns, mean, color='tab:orange', label='our correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:orange', alpha=0.2, linewidth=0.9)
 
-    if values[0] == 'ours60':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours40':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0)/np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color, alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-
-# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
+for seed in range(1):
+    naive_data = pd.read_csv('./ppo_tune/halfcheetah/progressnaive-ppo-tune-535.csv',
+                             header=0,
+                             parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                             index_col='timestamp')
+    naive_data.columns = naive_data.columns.astype(int)
+    naive_data = naive_data.sort_index(axis=1, ascending=True)
+    # rets = naive_data.loc[env + '-'+str(seed)].to_numpy()
+    # naive.append(rets)
+naive = naive_data.to_numpy()
+print("naive: ", naive.shape[0])
+# for i in reversed(range(10, naive.shape[1], 1)):
+#     naive[:, i] = np.mean(naive[:, i - 10:i + 1], axis=1)
+mean = np.mean(naive, axis=0)
+std = np.std(naive, axis=0) / np.sqrt(10)
+plt.plot(naive_data.columns, mean, color='tab:blue', label='existing correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:blue', alpha=0.2, linewidth=0.9)
 
 # define y_axis, x_axis
 plt.xlabel("steps")
 plt.ylabel("Undiscounted Returns")
 setaxes()
+# define y_axis, x_axis
+setsizes()
+plt.xticks(fontsize=17, rotation=45)
+plt.yticks(fontsize=17)
 plt.title('HalfCheetah')
 
-plt.subplot(244)
+plt.subplot(143)
 
-param = {'agent': ['biased', 'naive','ours60'],'env': ['Swimmer-v4']}
+for seed in range(1):
+    biased_data = pd.read_csv('./ppo_tune/swimmer/progressbiased-ppo-tune-394.csv',
+                              header=0,
+                              parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                              index_col='timestamp')
+    biased_data.columns = biased_data.columns.astype(int)
+    biased_data = biased_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+biased = biased_data.to_numpy()
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(biased, axis=0)
+std = np.std(biased, axis=0) / np.sqrt(10)
+print("biased: ", biased.shape[0])
+plt.plot(biased_data.columns, mean, color='tab:green', label='biased')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:green', alpha=0.2, linewidth=0.9)
 
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
+for seed in range(1):
+    weighted_data = pd.read_csv('./ppo_tune/swimmer/progressweighted-ppo-tune-394.csv',
+                                header=0,
+                                parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                                index_col='timestamp')
+    weighted_data.columns = weighted_data.columns.astype(int)
+    weighted_data = weighted_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+weighted = weighted_data.to_numpy()
+print("weighted: ", weighted.shape[0])
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(weighted, axis=0)
+std = np.std(weighted, axis=0) / np.sqrt(10)
+plt.plot(weighted_data.columns, mean, color='tab:orange', label='our correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:orange', alpha=0.2, linewidth=0.9)
 
-    if values[0] == 'ours60':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours40':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0)/np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color, alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-
-# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
+for seed in range(1):
+    naive_data = pd.read_csv('./ppo_tune/swimmer/progressnaive-ppo-tune-750.csv',
+                             header=0,
+                             parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                             index_col='timestamp')
+    naive_data.columns = naive_data.columns.astype(int)
+    naive_data = naive_data.sort_index(axis=1, ascending=True)
+    # rets = naive_data.loc[env + '-'+str(seed)].to_numpy()
+    # naive.append(rets)
+naive = naive_data.to_numpy()
+print("naive: ", naive.shape[0])
+# for i in reversed(range(10, naive.shape[1], 1)):
+#     naive[:, i] = np.mean(naive[:, i - 10:i + 1], axis=1)
+mean = np.mean(naive, axis=0)
+std = np.std(naive, axis=0) / np.sqrt(10)
+plt.plot(naive_data.columns, mean, color='tab:blue', label='existing correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:blue', alpha=0.2, linewidth=0.9)
 
 # define y_axis, x_axis
 plt.xlabel("steps")
 plt.ylabel("Undiscounted Returns")
 setaxes()
+# define y_axis, x_axis
+setsizes()
+plt.xticks(fontsize=17, rotation=45)
+plt.yticks(fontsize=17)
 plt.title('Swimmer')
 
-plt.subplot(245)
+plt.subplot(144)
 
-param = {'agent': ['biased', 'naive','ours60'],'env': ['Walker2d-v4']}
+for seed in range(1):
+    biased_data = pd.read_csv('./ppo_tune/walker/progressbiased-ppo-tune-39.csv',
+                              header=0,
+                              parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                              index_col='timestamp')
+    biased_data.columns = biased_data.columns.astype(int)
+    biased_data = biased_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+biased = biased_data.to_numpy()
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(biased, axis=0)
+std = np.std(biased, axis=0) / np.sqrt(10)
+print("biased: ", biased.shape[0])
+plt.plot(biased_data.columns, mean, color='tab:green', label='biased')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:green', alpha=0.2, linewidth=0.9)
 
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
+for seed in range(1):
+    weighted_data = pd.read_csv('./ppo_tune/walker/progressweighted-ppo-tune-566.csv',
+                                header=0,
+                                parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                                index_col='timestamp')
+    weighted_data.columns = weighted_data.columns.astype(int)
+    weighted_data = weighted_data.sort_index(axis=1, ascending=True)
+    # rets = weighted_data.loc[env + '-'+str(seed)].to_numpy()
+    # weighted.append(rets)
+weighted = weighted_data.to_numpy()
+print("weighted: ", weighted.shape[0])
+# for i in reversed(range(10, weighted.shape[1], 1)):
+#     weighted[:, i] = np.mean(weighted[:, i - 10:i + 1], axis=1)
+mean = np.mean(weighted, axis=0)
+std = np.std(weighted, axis=0) / np.sqrt(10)
+plt.plot(weighted_data.columns, mean, color='tab:orange', label='our correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:orange', alpha=0.2, linewidth=0.9)
 
-    if values[0] == 'ours60':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours40':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0)/np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color, alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-
-# plt.plot(steps,500 * np.ones(len(steps)),'--') #1/(1-gamma)
+for seed in range(1):
+    naive_data = pd.read_csv('./ppo_tune/walker/progressnaive-ppo-tune-750.csv',
+                             header=0,
+                             parse_dates={'timestamp': ['hyperparam', 'hyperparam2']},
+                             index_col='timestamp')
+    naive_data.columns = naive_data.columns.astype(int)
+    naive_data = naive_data.sort_index(axis=1, ascending=True)
+    # rets = naive_data.loc[env + '-'+str(seed)].to_numpy()
+    # naive.append(rets)
+naive = naive_data.to_numpy()
+print("naive: ", naive.shape[0])
+# for i in reversed(range(10, naive.shape[1], 1)):
+#     naive[:, i] = np.mean(naive[:, i - 10:i + 1], axis=1)
+mean = np.mean(naive, axis=0)
+std = np.std(naive, axis=0) / np.sqrt(10)
+plt.plot(naive_data.columns, mean, color='tab:blue', label='existing correction')
+plt.fill_between(biased_data.columns, mean + std, mean - std, color='tab:blue', alpha=0.2, linewidth=0.9)
 
 # define y_axis, x_axis
 plt.xlabel("steps")
 plt.ylabel("Undiscounted Returns")
 setaxes()
-plt.title('Walker2d')
-
-data = pd.read_csv('./logs/PPO/mujoco_simple.csv', header=0, index_col='hyperparam')
-data.columns = data.columns.astype(int)
-data = data.sort_index(axis=1, ascending=True)
-data = data.iloc[:,:250]
-plt.subplot(246)
-
-param = {'agent': ['biased', 'naive','corrected'],'env': ['InvertedPendulum-v4']}
-
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
-
-    if values[0] == 'corrected':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours60':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0)/np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color,alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
 # define y_axis, x_axis
-plt.xlabel("steps")
-plt.ylabel("Undiscounted Returns")
-setaxes()
-plt.title('InvertedPendulum')
-plt.subplot(247)
-
-param = {'agent': ['biased', 'naive','corrected'],'env': ['InvertedDoublePendulum-v4']}
-
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'],param['env'])):
-    results = []
-
-    if values[0] == 'corrected':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours60':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10,results.shape[1],1)):
-        results[:,i] = np.mean(results[:,i-10:i+1],axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results,axis=0)/np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean+std, mean-std,color=color,alpha=0.2,linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-# define y_axis, x_axis
-plt.xlabel("steps")
-plt.ylabel("Undiscounted Returns")
-setaxes()
-plt.title('InvertedDoublePendulum')
-
-plt.subplot(248)
-
-param = {'agent': ['biased', 'naive', 'corrected'], 'env': ['Reacher-v4']}
-
-seeds = range(10)
-steps = list(data)
-for values in list(itertools.product(param['agent'], param['env'])):
-    results = []
-
-    if values[0] == 'corrected':
-        line_name = 'our correction'
-        color = 'orangered'
-    elif values[0] == 'naive':
-        line_name = 'existing correction'
-        color = 'dodgerblue'
-    elif values[0] == 'biased':
-        line_name = 'biased'
-        color = 'blueviolet'
-    elif values[0] == 'ours60':
-        line_name = 'ours60'
-        color = 'red'
-    else:
-        line_name = 'separate'
-        color = 'green'
-
-    for seed in seeds:
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        name = '-'.join(name)
-        rets = data.loc[name].to_numpy()
-        rets = np.squeeze(rets)
-        # for i in range(rets.shape[0]):
-        #     rets[i] = (1-gamma**rets[i])/(1-gamma)
-        results.append(rets)
-
-    results = np.array(results)
-    for i in reversed(range(10, results.shape[1], 1)):
-        results[:, i] = np.mean(results[:, i - 10:i + 1], axis=1)
-    mean = np.mean(results, axis=0)
-    std = np.std(results, axis=0)/np.sqrt(10)
-    plt.plot(steps, mean, color=color, label=line_name)
-    # plt.plot(steps,mean, label=name)
-    plt.fill_between(steps, mean + std, mean - std, color=color, alpha=0.2, linewidth=0.9)
-    # plt.errorbar(steps, mean, std, color=color, label=line_name, alpha=0.5, elinewidth=0.9)
-    # set legend
-    plt.legend(prop={"size":19})
-    # plt.legend()
-# define y_axis, x_axis
-plt.xlabel("steps")
-plt.ylabel("Undiscounted Returns")
-setaxes()
-plt.title('Reacher')
+setsizes()
+plt.xticks(fontsize=17, rotation=45)
+plt.yticks(fontsize=17)
+plt.legend(prop={"size":17})
+plt.title('Walker')
 plt.tight_layout()
 plt.show()

@@ -18,8 +18,10 @@ from Components import logger
 import itertools
 import pandas as pd
 import seaborn as sns
+from reacher_bias_variance import setaxes, setsizes
+from reacher_config import repeated, episodic
 
-def train(args,stepsize=0.4):
+def train(args,env=None,stepsize=0.4):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
     seed = args.seed
@@ -28,7 +30,8 @@ def train(args,stepsize=0.4):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed((seed))
-    env = DotReacherRepeat(stepsize=stepsize)
+    if env == None:
+        env = DotReacherRepeat(stepsize=stepsize)
     o_dim = env.observation_space.shape[0]
     if args.continuous:
         a_dim= env.action_space.shape[0]
@@ -287,5 +290,91 @@ def tune():
         logger.dumpkvs()
         ratio=[]
 
+def plot_ratio():
+    plt.figure(figsize=(13, 5.5), dpi=60)
+    setsizes()
+    args = argsparser()
+    seeds = range(10)
+    checkpoint = 1000
 
-tune()
+    args.agent = 'batch_ac_shared_gc'
+    args.naive= False
+    if args.agent == 'batch_ac' and args.naive == True:
+        name = 'naive'
+    elif args.agent == 'batch_ac' and args.naive == False:
+        name = 'biased'
+    else:
+        name = args.agent
+    hyperparam = repeated[name]
+    args.buffer = hyperparam['buffer']
+    args.batch_size = hyperparam['buffer']
+    args.lr = hyperparam['lr']
+    args.lr_weight = hyperparam['lr_weight']
+    args.scale_weight = hyperparam['scale']
+    args.LAMBDA_2 = hyperparam['gamma_coef']
+    args.gamma = hyperparam['gamma']
+    args.hidden = hyperparam['hid']
+    args.hidden_weight = hyperparam['critic_hid']
+
+    ratio = []
+    logger.configure('./', ['csv'], log_suffix='batch-ac-err-in-buffer' + str(args.seed))
+    # store err_in_buffer for both sampling and our correction
+    for seed in seeds:
+        args.seed = seed
+        avgrets, avgerr, avgerr_buffer, avgerr_ratio = train(args, stepsize=0.2)
+        ratio.append(avgerr_ratio)
+        logger.logkv("name", 'err-' + str(seed))
+        for n in range(len(avgerr_buffer)):
+            logger.logkv(str((n + 1) * checkpoint), avgerr_buffer[n])
+        logger.dumpkvs()
+
+    ratio = np.array(ratio)
+    mean = np.mean(ratio, axis=0)
+    std = np.std(ratio,axis=0)/np.sqrt(10)
+    plt.plot(range(0,checkpoint*mean.shape[0],checkpoint), mean, color='tab:orange', label='shared')
+    plt.fill_between(range(0,checkpoint*mean.shape[0],checkpoint), mean + std, mean - std,
+                     color='tab:orange', alpha=0.2, linewidth=0.9)
+
+    args.agent = 'weighted_batch_ac'
+    args.naive = False
+    if args.agent == 'batch_ac' and args.naive == True:
+        name = 'naive'
+    elif args.agent == 'batch_ac' and args.naive == False:
+        name = 'biased'
+    else:
+        name = args.agent
+    hyperparam = repeated[name]
+    args.buffer = hyperparam['buffer']
+    args.batch_size = hyperparam['buffer']
+    args.lr = hyperparam['lr']
+    args.lr_weight = hyperparam['lr_weight']
+    args.scale_weight = hyperparam['scale']
+    args.LAMBDA_2 = hyperparam['gamma_coef']
+    args.gamma = hyperparam['gamma']
+    args.hidden = hyperparam['hid']
+    args.hidden_weight = hyperparam['critic_hid']
+
+    ratio = []
+    for seed in seeds:
+        args.seed = seed
+        avgrets, avgerr, avgerr_buffer, avgerr_ratio = train(args, stepsize=0.2)
+        ratio.append(avgerr_ratio)
+
+    ratio = np.array(ratio)
+    mean = np.mean(ratio, axis=0)
+    std = np.std(ratio, axis=0) / np.sqrt(10)
+    plt.plot(range(0, checkpoint * mean.shape[0], checkpoint), mean, color='tab:purple', label='non-shared')
+    plt.fill_between(range(0, checkpoint * mean.shape[0], checkpoint), mean + std, mean - std,
+                     color='tab:purple',
+                     alpha=0.2, linewidth=0.9)
+    plt.legend(prop={"size": 17})
+    plt.xlabel("number of samples", fontsize=19)
+    plt.ylabel("Ratio between biases", fontsize=19)
+    plt.yticks(fontsize=17)
+    plt.xticks(fontsize=17, rotation=45)
+    plt.title("Bias Ratio of the State Emphasis", fontsize=19)
+    setaxes()
+    plt.xlim(0,None)
+    plt.show()
+
+plot_ratio()
